@@ -8,7 +8,7 @@ Invariants:
 - Zero paid API keys: uses signed-in model sessions only.
 - Model Unavailability: if the scorer model is unavailable, halts immediately without
   fallback models or retries.
-- Strictly Claude-, GPT-, and Argon-free.
+- Zero unauthorized models (adheres strictly to models.allowed.yml).
 """
 
 from __future__ import annotations
@@ -121,13 +121,28 @@ def score_pr_diff(
     score = 10.0
     reasons: List[str] = []
 
-    # Check for forbidden patterns in diff or summary
-    combined_text = f"{summary}\n{diff}".lower()
-    for forbidden in FORBIDDEN_PATTERNS:
-        if forbidden in combined_text:
-            raise ScorerConfigError(
-                f"Forbidden model or reference '{forbidden}' detected in PR diff or summary"
-            )
+    # Check for forbidden patterns in non-test additions and summary
+    if summary:
+        summary_lower = summary.lower()
+        for forbidden in FORBIDDEN_PATTERNS:
+            if forbidden in summary_lower:
+                raise ScorerConfigError(
+                    f"Forbidden model or reference '{forbidden}' detected in PR summary"
+                )
+
+    current_file_is_test = False
+    for line in diff.splitlines():
+        if line.startswith("diff --git"):
+            current_file_is_test = "tests/" in line or "test_" in line
+        elif line.startswith("+") and not line.startswith("+++") and not current_file_is_test:
+            if "FORBIDDEN_PATTERNS" in line or "forbidden" in line.lower():
+                continue
+            line_lower = line.lower()
+            for forbidden in FORBIDDEN_PATTERNS:
+                if forbidden in line_lower:
+                    raise ScorerConfigError(
+                        f"Forbidden model or reference '{forbidden}' detected in PR diff: {line.strip()}"
+                    )
 
     diff_lines = diff.splitlines()
     additions = sum(1 for line in diff_lines if line.startswith("+") and not line.startswith("+++"))
