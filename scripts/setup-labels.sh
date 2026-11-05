@@ -25,19 +25,21 @@ create_label() {
   local name="$1"
   local color="$2"
   local description="$3"
-  gh label create "$name" --color "$color" --description "$description" --force "${REPO_ARG[@]}"
+  gh label create "$name" --color "$color" --description "$description" --force ${REPO_ARG[@]+"${REPO_ARG[@]}"}
   echo "  ✓ $name (#$color)"
 }
 
 create_label "agent"             "0E8A16" "Trigger: issue is picked up by the autonomous agent factory (Grok Bot)"
 create_label "epic"              "B60205" "Planning only: split into agent sub-issues"
-create_label "deploy"            "006B75" "Deploy trigger: applied to the final sub-issue of an epic at creation; triggers deploy after green merge"
+create_label "deploy"            "006B75" "Final sub-issue of an epic; triggers deploy after green merge"
 create_label "waiting-for-human" "FBCA04" "Blocked on questions awaiting human response via Grok Bot"
 create_label "in-progress"       "1D76DB" "Currently being planned, built, or verified by an agent worktree"
 create_label "rework"            "D93F0B" "Escalated to Gemini 3.8 Flash High for rework after verification/interrogation failure"
 create_label "ready-to-merge"    "5319E7" "Green CI + independent verification & Grok 4.7 interrogation passed"
 create_label "feature"           "A2EEEF" "New user-facing feature or enhancement"
 create_label "bug"               "D73A4A" "Bug report or regression fix"
+create_label "low-risk"          "0E8A16" "PR risk: docs-only, tests-only, or small fix under 50 lines; auto-merge eligible"
+create_label "needs-approval"    "FBCA04" "PR risk: high-risk paths, dependencies, workflows, models, or large diff; requires César approval"
 
 echo ""
 echo "✅ GitHub labels configured."
