@@ -3,7 +3,7 @@
 
 Enforces:
 1. models.yml and models.allowed.yml exist and are valid YAML.
-2. All required roles (builder, auditor, planner, epic_planner, subagents) are specified.
+2. All required roles (builder, auditor, planner, epic_planner, subagents, scorer) are specified.
 3. Every role's model is in the allowed models list.
 4. The auditor model MUST NOT be the same as the builder model.
 5. Forbidden models (Argon, Claude, GPT) are completely rejected.
@@ -13,7 +13,7 @@ import os
 import sys
 import yaml
 
-REQUIRED_ROLES = ["builder", "auditor", "planner", "epic_planner", "subagents"]
+REQUIRED_ROLES = ["builder", "auditor", "planner", "epic_planner", "subagents", "scorer"]
 FORBIDDEN_PATTERNS = ["argon", "claude", "gpt", "openai", "anthropic"]
 
 

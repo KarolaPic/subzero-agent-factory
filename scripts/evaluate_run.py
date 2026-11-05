@@ -41,6 +41,7 @@ def load_models_config(root: Optional[Path] = None) -> Dict[str, str]:
         "planner": "gemini-3.8-flash-high",
         "epic_planner": "gemini-3.8-flash-high",
         "subagents": "gemini-3.8-flash-high",
+        "scorer": "gemini-3.8-flash-low",
     }
 
 
