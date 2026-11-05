@@ -1,0 +1,5 @@
+interface:
+  display_name: "Prototype"
+  short_description: "Real variants on one page"
+policy:
+  allow_implicit_invocation: false
