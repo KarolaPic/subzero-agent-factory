@@ -44,15 +44,18 @@ $run-epic #N
   │      ├─ TDD & runtime app verification (verify-app)
   │      ├─ Independent adversarial audit (grok-4.7)
   │      └─ Open PR (Closes #<SUB_ISSUE>)
-  ├─ 4. Merge Gate:
+  ├─ 4. Reviewer Agent Gate (review-pr):
+  │      ├─ Execute review_pr.py --pr <PR> --issue <SUB_ISSUE>
+  │      ├─ Formally submits APPROVE or REQUEST_CHANGES (up to 3 rounds)
+  │      └─ If unapproved after 3 rounds ──► HALT & report to César
+  ├─ 5. Three-Tier Risk Merge Gate:
   │      ├─ Required status check 'ci' MUST be green
-  │      ├─ Audit verdict MUST be PASS
-  │      ├─ If #28 merge rule active: check risk classification
-  │      │    └─ low-risk ──► auto squash merge
-  │      │    └─ needs-approval ──► STOP and ask César in thread final message
+  │      ├─ low-risk ──► auto squash merge
+  │      ├─ normal ──► auto squash merge on green CI + review-pr APPROVE
+  │      ├─ high-risk / needs-approval ──► STOP and ask César in thread final message
   │      └─ gh pr merge <PR> --squash (NEVER pass --delete-branch)
-  ├─ 5. Log Run: Append run outcome to .factory/runs/runs.jsonl (if #29 active)
-  └─ 6. Clean up 'in-progress' label
+  ├─ 6. Log Run: Append run outcome to .factory/runs/runs.jsonl with review metrics
+  └─ 7. Clean up 'in-progress' label
      │
      ▼
 [Phase 5: Final Deploy & Epic Closure]
@@ -220,16 +223,30 @@ for SUB_NUM in "${SUB_ISSUES[@]}"; do
     PR_NUM=$(basename "$PR_URL")
   fi
 
-  # Step 7: CI and Merge Policy Gate
+  # Step 7: Autonomous Reviewer Agent Gate & Three-Tier Risk Merge Policy
+  # A. Dispatch reviewer agent (review-pr)
+  REVIEW_OUTPUT=$(python3 scripts/review_pr.py --pr "$PR_NUM" --issue "$SUB_NUM" --json)
+  REVIEW_VERDICT=$(echo "$REVIEW_OUTPUT" | jq -r '.verdict')
+  IS_HALTED=$(echo "$REVIEW_OUTPUT" | jq -r '.halted')
+
+  if [ "$IS_HALTED" = "true" ] || [ "$REVIEW_VERDICT" != "APPROVE" ]; then
+    echo "Reviewer agent requested changes or halted after 3 rounds on PR #$PR_NUM. Stopping for César."
+    exit 2
+  fi
+
+  # B. Check risk classification (classify_pr_risk.py)
+  RISK_TIER=$(python3 scripts/classify_pr_risk.py --base origin/main --head HEAD --label)
+  if [ "$RISK_TIER" = "high-risk" ]; then
+    echo "PR #$PR_NUM is high-risk. Halting for César in thread final message."
+    exit 0
+  fi
+
+  # C. Auto-merge on green CI + reviewer approval
   # Wait for required status check 'ci' to turn green
-  # Merge rule: If classify_pr_risk script exists (#28):
-  #   - low-risk: auto-merge authorized
-  #   - needs-approval: STOP and ask César in thread final message
-  # If #28 script not yet present: merge on green CI + audit pass
   gh pr merge "$PR_NUM" --squash
   # NOTE: NEVER pass --delete-branch. Branches are always preserved.
 
-  # Step 8: Log run outcome (if #29 exists)
+  # Step 8: Log run outcome with review metrics (scripts/run_log.py)
   if [ -f "scripts/run_log.py" ]; then
     python3 scripts/run_log.py record --issue "$SUB_NUM" --pr "$PR_NUM" --result merged
   fi
