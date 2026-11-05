@@ -48,6 +48,16 @@ class TestPullRequestTemplate(unittest.TestCase):
         self.assertNotIn("AGY_FAST", content)
         self.assertNotIn("GROK_WORK", content)
 
+    def test_pr_template_disallows_refs_directive(self):
+        with open(self.template_path, "r", encoding="utf-8") as f:
+            content = f.read()
+
+        # Directive must disallow Refs # and specify Closes #
+        self.assertIn("never use Refs #N", content)
+        # Ensure 'Refs #' does not appear outside of the prohibition instruction
+        cleaned = content.replace("never use Refs #N", "")
+        self.assertNotIn("Refs #", cleaned)
+
 
 if __name__ == "__main__":
     unittest.main()
