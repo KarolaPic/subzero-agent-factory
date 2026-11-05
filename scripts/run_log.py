@@ -7,11 +7,13 @@ using fcntl.flock, a dedicated lockfile, and schema validation.
 
 from __future__ import annotations
 
+import argparse
 import contextlib
 import fcntl
 import json
 import os
 import subprocess
+import sys
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -247,3 +249,66 @@ def read_runs(runs_dir: Optional[Path] = None) -> List[Dict[str, Any]]:
             records = [json.loads(line) for line in rf if line.strip()]
 
     return records
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Run Log CLI")
+    subparsers = parser.add_subparsers(dest="command", required=True)
+
+    # Subcommand: record
+    rec_parser = subparsers.add_parser("record", help="Record a run entry to runs.jsonl")
+    rec_parser.add_argument("--issue", required=True, help="Issue number or identifier")
+    rec_parser.add_argument("--result", required=True, choices=["merged", "blocked", "failed"], help="Run outcome")
+    rec_parser.add_argument("--pr", type=int, default=None, help="Pull request number")
+    rec_parser.add_argument("--score", "--pr-score", type=float, default=None, dest="pr_score", help="PR score (e.g. 1-10)")
+    rec_parser.add_argument("--builder", default="gemini-3.8-flash-high", help="Builder model")
+    rec_parser.add_argument("--auditor", default="grok-4.7", help="Auditor model")
+    rec_parser.add_argument("--runs-dir", type=Path, default=None, help="Optional runs directory")
+
+    # Subcommand: validate
+    val_parser = subparsers.add_parser("validate", help="Validate all records in runs.jsonl")
+    val_parser.add_argument("--runs-dir", type=Path, default=None, help="Optional runs directory")
+
+    # Subcommand: list
+    list_parser = subparsers.add_parser("list", help="List records in runs.jsonl")
+    list_parser.add_argument("--runs-dir", type=Path, default=None, help="Optional runs directory")
+    list_parser.add_argument("--json", action="store_true", help="Output JSON array")
+
+    args = parser.parse_args()
+
+    try:
+        if args.command == "record":
+            issue_val = int(args.issue) if str(args.issue).isdigit() else args.issue
+            rec = record_run(
+                issue=issue_val,
+                pr=args.pr,
+                result=args.result,
+                builder=args.builder,
+                auditor=args.auditor,
+                pr_score=args.pr_score,
+                runs_dir=args.runs_dir,
+            )
+            print(f"✓ Recorded run for issue #{issue_val} (result: {args.result}, score: {args.pr_score})")
+
+        elif args.command == "validate":
+            records = read_runs(args.runs_dir)
+            for i, record in enumerate(records, start=1):
+                validate_run_record(record)
+            print(f"✓ Validated {len(records)} run record(s) in run log successfully.")
+
+        elif args.command == "list":
+            records = read_runs(args.runs_dir)
+            if args.json:
+                print(json.dumps(records, indent=2))
+            else:
+                for r in records:
+                    print(f"Issue #{r.get('issue')} | PR #{r.get('pr')} | Result: {r.get('result')} | Score: {r.get('pr_score')}")
+
+    except RunLogError as err:
+        print(f"RunLog Validation Error: {err}", file=sys.stderr)
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()
+

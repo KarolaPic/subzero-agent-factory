@@ -8,7 +8,8 @@
 
 ## How it was tested
 
-- **Models Used**: `builder: <builder-model>`, `auditor: <auditor-model>` (read from `models.yml`)
+- **Models Used**: `builder: <builder-model>`, `auditor: <auditor-model>`, `scorer: <scorer-model>` (read from `models.yml`)
+- **PR Score**: `<score>/10 — <short reason>` (evaluated by T3 using scorer model, zero paid API keys)
 - **Runtime Proof** (`exitCode: 0`):
 ```text
 # verification command output
