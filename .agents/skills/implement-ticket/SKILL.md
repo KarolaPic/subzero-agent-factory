@@ -55,13 +55,14 @@ High-level orchestrator skill designed for autonomous feature tickets and issue-
   - [`domain-modeling`](../domain-modeling/SKILL.md): Align terminology and entities.
   - [`to-spec`](../to-spec/SKILL.md): Write a clear, testable specification before coding.
 - **Plan-Then-Build Rules**:
-  1. **Thread Plan First**: Every issue thread starts with a short plan directly in the thread (files, tests, verification).
-  2. **Self-Deduce First**: Exhaustively resolve technical choices, types, conventions, and constraints from the codebase, git history, and documentation.
-  3. **Open Questions (Stop Gate)**: If ANY open question, scope ambiguity, or product trade-off remains:
+  1. **Task Card Check**: Check the issue task card first. If **Goal**, **Done when**, or **Don't touch** is missing, ambiguous, or incomplete, stop immediately and ask in the thread final message per `AGENTS.md` Section 2.
+  2. **Thread Plan First**: Every issue thread starts with a short plan directly in the thread (files, tests, verification).
+  3. **Self-Deduce First**: Exhaustively resolve technical choices, types, conventions, and constraints from the codebase, git history, and documentation.
+  4. **Open Questions (Stop Gate)**: If ANY open question, scope ambiguity, or product trade-off remains:
      - **NEVER comment on the issue or PR**.
      - Stop execution immediately without editing files.
      - Write the questions directly in the **thread final message**. The external dispatcher (**Grok Bot**) will relay the questions to César and pause until answered.
-  4. **No Questions (Immediate Build)**: If there are NO open questions:
+  5. **No Questions (Immediate Build)**: If there are NO open questions:
      - Write `"No questions, starting build"`.
      - Continue directly to the build (Phase 3) in the same run without waiting for a separate build message.
 

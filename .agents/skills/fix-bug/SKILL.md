@@ -40,6 +40,7 @@ High-level bug fixing skill for autonomous defect triage, reproduction-first dia
   - Read configured models from [`models.yml`](../../../models.yml).
   - **Model Not Available Rule**: If any required model is unavailable in the environment, **stop and tell the user immediately**. Do NOT use a fallback model, and do NOT retry.
 - **Plan-Then-Build Protocol**:
+  - Check the bug task card first; if **Goal** (or What happened/Expected), **Done when**, or **Don't touch** is missing, ambiguous, or incomplete, ask in the thread final message and stop immediately per `AGENTS.md` Section 2.
   - Every issue thread starts with a short plan directly in the thread (reproduction approach, files to inspect/modify, tests to author, verification).
 - **GitHub Account & Identity Invariant**:
   - Every commit, push, and PR must use the GitHub account `cesarchavezcal`.

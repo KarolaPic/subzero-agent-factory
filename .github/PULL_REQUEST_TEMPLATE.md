@@ -1,27 +1,21 @@
-## Summary
+## Why
 
-- **Source Issue / Ticket**: <!-- e.g. Closes #12 (for an epic's last deploy sub-issue PR, also include Closes #EPIC) or LIN-123; never use Refs #N -->
-- **Specification / Plan**: <!-- e.g. docs/specs/<slug>.md -->
-- **Playbook**: `poteto-mode` (`Autopilot-full`)
+<!-- 1–3 sentences explaining the problem and approach. Link context or parent epic if applicable. -->
 
-## Multi-Model Execution & Receipts (Zero-API-Key, Claude-Free)
+## What changed
 
-| Phase | Pool | Model | Artifact / Verdict |
-| :--- | :--- | :--- | :--- |
-| **Phase 0: Context Scout** | `AGY_FAST` | `antigravity::gemini-3.8-flash-low` | Context brief (`<2KB`) |
-| **Phase 1 & 2: Spec & Plan** | `AGY_FAST` | `antigravity::gemini-3.8-flash-high` | `docs/specs/<slug>.md` / DAG tickets |
-| **Phase 3: Build (UI / CRUD)** | `AGY_FAST` | `antigravity::gemini-3.8-flash-medium` | Scoped minimal diff |
-| **Phase 3: Build (Backend)** | `GROK_WORK` | `grok::grok-4.7-build-fast` | Scoped minimal diff |
-| **Rework Escalation (<=2)** | `AGY_FAST` | `antigravity::gemini-3.8-flash-high` | `retryCount: 0..2` |
-| **Phase 4a: Runtime Proof** | `AGY_FAST` | `antigravity::gemini-3.8-flash-medium` | `verify-app` (`exitCode: 0`) |
-| **Phase 4b: Interrogation** | `GROK_AUDIT` | `grok::grok-4.7` (`reasoningEffort: high`) | `verdict: PASS` |
+<!-- Concise summary or diff-sketch of the modifications. -->
 
-### Phase 4a: Runtime Verification Proof
+## How it was tested
+
+- **Models Used**: `builder: <builder-model>`, `auditor: <auditor-model>` (read from `models.yml`)
+- **Runtime Proof** (`exitCode: 0`):
 ```text
-# Paste verification command + exitCode: 0 + artifacts/<work-item-id>/ summary
+# verification command output
 ```
-
-### Phase 4b: Independent Grok 4.7 Interrogation Verdict
+- **Audit Verdict**:
 ```text
 verdict: PASS
 ```
+
+Closes #<!-- number (never use Refs #N; for final deploy sub-issue of an epic, also add Closes #EPIC) -->

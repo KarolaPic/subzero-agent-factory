@@ -55,6 +55,7 @@ What [`./scripts/init.sh`](scripts/init.sh) does (idempotent, safe to re-run at 
 ## 2. Workflow & Agent-Run Rules (Plan-Then-Build & GitHub Account)
 
 - **Plan-Then-Build Rule**:
+  - **Task Card Verification**: The agent checks the issue task card first. If **Goal**, **Done when**, or **Don't touch** is missing, ambiguous, or incomplete, ask in the thread final message and stop immediately without editing files.
   - Every issue thread starts with a short plan in the thread (files, tests, verification).
   - If there is **ANY open question**, ask it in the thread and stop without editing files. Wait for the human answer, then build.
   - If there are **NO questions**, write `"No questions, starting build"` and continue to the build in the same run (no waiting for a separate build message).
