@@ -173,3 +173,59 @@ Beyond the inner task execution loop, the factory runs an asynchronous evaluativ
    - Self-evolution PRs strictly require human approval (`cesarchavezcal`) and MUST NOT auto-merge.
    - Every self-evolution PR must include a structured **Receipt of Causality** citing the contributing lesson IDs, repetition counts, and expected behavioral changes.
 
+---
+
+## 7. Frontend, Design, Motion & Verification Skills Lifecycle
+
+The factory integrates specialized design, layout, motion, and animation skills across the standard 5-phase software delivery lifecycle:
+
+```
+[Phase 1: Planning / Spec] ──► [Phase 3: Build / TDD] ──► [Phase 4a: Verification] ──► [Phase 4b: Audit] ──► [Phase 5: Ship]
+   gather, sketchbook             emil-design-eng                 break-ui, match               restraint              ship
+   prototype, pick-ui-library     layout & motion skills          animation-performance         review-animations
+   apple-design, scope, defaults  mobile-native, ask-sonner       deconstruct, lab              remove-animations, rule
+```
+
+### Phase 1: Discovery, Ideation & Design Foundations (Planning / Spec)
+Used during `to-spec`, `grill-with-docs`, and architectural discovery before code construction:
+- **`gather`**: Collect reference UI patterns, design inspiration, and real-world implementation candidates.
+- **`sketchbook`**: Rapid layout exploration and concept drafting in project stack.
+- **`prototype`**: Disposable interaction prototypes to validate ergonomics before committing to architecture.
+- **`pick-ui-library`**: Choose optimal component primitives (Base UI, Radix, Tailwind, etc.) without analysis paralysis.
+- **`apple-design`**: Align with Apple Human Interface Guidelines, spatial depth, materials, and typography tokens.
+- **`scope`** & **`defaults`**: Enforce crisp feature boundaries and opinionated house defaults (focus, scroll, type, surfaces).
+
+### Phase 3: Construction & Component Craft (Build / TDD)
+Used by the builder agent during feature and UI development:
+- **Visual Design & Layout**:
+  - **`emil-design-eng`**: Emil Kowalski's craft principles, micro-interactions, and visual polish.
+  - **`frames`**, **`viewports`**, **`alignment`**, **`color`**, **`icons`**, **`avatar`**: Grid alignment, responsive breakpoint testing, accessible color tokens, SVG icon drafting, and avatar rendering.
+  - **`mobile-native`**: Mobile-web ergonomics (100vh viewport fix, tap targets $\ge 44$px, safe area insets, no tap delay).
+  - **`ask-sonner`**: Robust toast notification wiring and state management.
+  - **`web-design-guidelines`**: Accessibility (a11y), contrast ratios, keyboard navigation, and web standards.
+  - **`prose`** & **`copy`**: Clear UX copy, Title Case labels, typographic hierarchy, and concise microcopy.
+- **Motion & Dynamics**:
+  - **`animate`** & **`animate-expo`**: Physics-based animation authoring for web and React Native/Expo.
+  - **`choreograph`**: Sequence and stagger complex multi-element transitions.
+  - **`stageshow`**: Choreograph presentation flows, scene transitions, and demo showcases.
+  - **`motion`** & **`animation-vocabulary`**: Map physical motion descriptions to exact spring parameters.
+
+### Phase 4a: Runtime Verification & Visual Parity (Verification)
+Used during `verify-app` to capture concrete runtime proof before PR opening:
+- **`break-ui`**: Mandatory stress-testing of UI components against worst-case data (overflows, zero states, long unbreakable strings, extreme numbers, emoji).
+- **`match`** & **`verify`**: Verify visual parity side-by-side against design specs or references.
+- **`deconstruct`**: Frame-by-frame clock scrubber to inspect animated transitions against easing curves.
+- **`lab`**: Force interactive component states open (hover, active, focus, disabled, error) for inspection.
+- **`animation-performance`**: Ensure 60fps frame budgets, GPU compositing (`transform`, `opacity`), and zero main-thread jank.
+
+### Phase 4b: Independent Audit & Interrogation (Audit)
+Used by the independent auditor (`grok-4.7`) to enforce restraint and prevent visual churn:
+- **`restraint`**: Identify visual clutter, decorative noise, and unnecessary elements that add friction.
+- **`review-animations`**: Critique motion timing, spring overshoots, and awkward transitions against Emil Kowalski's standards.
+- **`remove-animations`**: Strip unnecessary animations that slow user interaction down.
+- **`rule`** & **`reuse`**: Enforce design token compliance, component reuse, and adherence to established patterns.
+
+### Phase 5: Release & Packaging (Ship)
+- **`ship`**: Production asset optimization, bundle sanity checks, and final release verification.
+
+
