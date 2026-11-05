@@ -155,6 +155,42 @@ class TestRunLog(unittest.TestCase):
             self.assertEqual(rec["result"], "merged")
             self.assertEqual(rec["builder"], "gemini-3.8-flash-high")
 
+    def test_run_log_cli_record_score_and_validate(self):
+        import subprocess
+        # 1. Test CLI record with --score
+        cmd_rec = [
+            "python3",
+            "scripts/run_log.py",
+            "record",
+            "--issue", "60",
+            "--pr", "65",
+            "--result", "merged",
+            "--score", "9.7",
+            "--runs-dir", str(self.runs_dir),
+        ]
+        res = subprocess.run(cmd_rec, capture_output=True, text=True)
+        self.assertEqual(res.returncode, 0, f"run_log record failed: {res.stderr}")
+        self.assertIn("score: 9.7", res.stdout)
+
+        # 2. Test CLI validate
+        cmd_val = [
+            "python3",
+            "scripts/run_log.py",
+            "validate",
+            "--runs-dir", str(self.runs_dir),
+        ]
+        res_val = subprocess.run(cmd_val, capture_output=True, text=True)
+        self.assertEqual(res_val.returncode, 0, f"run_log validate failed: {res_val.stderr}")
+        self.assertIn("Validated 1 run record(s)", res_val.stdout)
+
+        # 3. Read back and verify pr_score
+        runs = read_runs(self.runs_dir)
+        self.assertEqual(len(runs), 1)
+        self.assertEqual(runs[0]["issue"], 60)
+        self.assertEqual(runs[0]["pr"], 65)
+        self.assertEqual(runs[0]["pr_score"], 9.7)
+
 
 if __name__ == "__main__":
     unittest.main()
+

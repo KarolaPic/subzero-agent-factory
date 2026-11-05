@@ -31,6 +31,8 @@ class TestPullRequestTemplate(unittest.TestCase):
         self.assertIn("models.yml", content)
         self.assertIn("builder", content)
         self.assertIn("auditor", content)
+        self.assertIn("scorer", content)
+        self.assertIn("PR Score", content)
 
     def test_pr_template_has_runtime_proof_and_audit_verdict(self):
         with open(self.template_path, "r", encoding="utf-8") as f:
