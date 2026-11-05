@@ -1,0 +1,3 @@
+interface:
+  display_name: "Motion"
+  short_description: "Curves, durations, gestures, exits and blur"

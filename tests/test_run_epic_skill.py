@@ -111,5 +111,43 @@ class TestRunEpicSkill(unittest.TestCase):
         self.assertIn("cesarchavezcal", content)
 
 
+    def test_review_pr_integration_in_run_epic(self):
+        with open(self.skill_path, "r", encoding="utf-8") as f:
+            content = f.read()
+
+        self.assertIn("review-pr", content)
+        self.assertIn("review_pr.py", content)
+        self.assertIn("APPROVE", content)
+        self.assertIn("high-risk", content)
+        self.assertIn("--delete-branch", content)
+
+    def test_review_pr_integration_in_implement_ticket(self):
+        impl_path = os.path.join(self.repo_root, ".agents", "skills", "implement-ticket", "SKILL.md")
+        self.assertTrue(os.path.isfile(impl_path))
+        with open(impl_path, "r", encoding="utf-8") as f:
+            content = f.read()
+
+        self.assertIn("review-pr", content)
+        self.assertIn("review_pr.py", content)
+        self.assertIn("APPROVE", content)
+        self.assertIn("3 Rounds", content)
+        self.assertIn("high-risk", content)
+        self.assertIn("--delete-branch", content)
+
+    def test_review_pr_integration_in_fix_bug(self):
+        bug_path = os.path.join(self.repo_root, ".agents", "skills", "fix-bug", "SKILL.md")
+        self.assertTrue(os.path.isfile(bug_path))
+        with open(bug_path, "r", encoding="utf-8") as f:
+            content = f.read()
+
+        self.assertIn("review-pr", content)
+        self.assertIn("review_pr.py", content)
+        self.assertIn("APPROVE", content)
+        self.assertIn("3 Rounds", content)
+        self.assertIn("high-risk", content)
+        self.assertIn("--delete-branch", content)
+
+
 if __name__ == "__main__":
     unittest.main()
+

@@ -1,0 +1,3 @@
+interface:
+  display_name: "Rule"
+  short_description: "Turn a correction into a rule"

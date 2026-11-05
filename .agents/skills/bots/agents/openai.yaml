@@ -1,0 +1,5 @@
+interface:
+  display_name: "Bots"
+  short_description: "Grok Bots as a pile, cards and an org chart"
+policy:
+  allow_implicit_invocation: false

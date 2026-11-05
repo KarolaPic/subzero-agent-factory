@@ -154,9 +154,11 @@ gh api --method PATCH "repos/$REPO" \
 
 ---
 
-## 5. Branch Protection on `main` (Required Check: `ci`)
+## 5. Branch Protection & Ruleset on `main` (Required Check: `ci` + 1 Approving Review)
 
-`.github/workflows/ci.yml` defines a job with the stable check name **`ci`**.
+The factory enforces quality gates on `main` via branch rulesets and protection:
+- **1 Approving Review**: Formal PR review approval from the autonomous Reviewer Agent (`review-pr`) or `cesarchavezcal`.
+- **Status Check**: Strict check **`ci`** from `.github/workflows/ci.yml`.
 
 ### CLI (`gh api PUT`)
 ```bash
@@ -168,7 +170,11 @@ gh api --method PUT "repos/$REPO/branches/main/protection" --input - <<'EOF'
     "contexts": ["ci"]
   },
   "enforce_admins": false,
-  "required_pull_request_reviews": null,
+  "required_pull_request_reviews": {
+    "dismiss_stale_reviews": true,
+    "require_code_owner_reviews": false,
+    "required_approving_review_count": 1
+  },
   "restrictions": null,
   "required_linear_history": true,
   "allow_force_pushes": false,
@@ -177,6 +183,22 @@ gh api --method PUT "repos/$REPO/branches/main/protection" --input - <<'EOF'
 }
 EOF
 ```
+
+### GitHub Web UI (Rulesets)
+Navigate to **Settings → Rules → Rulesets → New branch ruleset**:
+1. **Ruleset Name**: `main-protection`
+2. **Enforcement status**: `Active`
+3. **Target branches**: Include default branch (`main`)
+4. **Rules**:
+   - [x] **Restrict deletions**
+   - [x] **Block force pushes**
+   - [x] **Require linear history**
+   - [x] **Require a pull request before merging**:
+     - Required approvals: **1**
+     - Dismiss stale pull request approvals when new commits are pushed
+   - [x] **Require status checks to pass**:
+     - Require branches to be up to date before merging
+     - Status checks: **`ci`**
 
 ### If the Repo Was Created Private on GitHub Free
 If the API returns HTTP `403` (`Upgrade to GitHub Pro or make this repository public to enable this feature`), make the working repository public and re-run `./scripts/init.sh`:
@@ -188,7 +210,38 @@ gh repo edit "$REPO" --visibility public --accept-visibility-change-consequences
 
 ---
 
-## 6. App Verification Skill (`.agents/skills/verify-app`)
+## 6. Reviewer Agent GitHub App Setup & Permissions
+
+The autonomous reviewer agent ([`review-pr`](../.agents/skills/review-pr/SKILL.md) / [`scripts/review_pr.py`](../scripts/review_pr.py)) submits formal GitHub PR reviews (`APPROVE` or `REQUEST_CHANGES`) under a dedicated bot identity.
+
+### Step 1: Register GitHub App
+In GitHub (**Settings → Developer Settings → GitHub Apps → New GitHub App**):
+1. **GitHub App name**: `grok-bot-reviewer` (or unique name for your factory)
+2. **Homepage URL**: Repository URL (e.g. `https://github.com/cesarchavezcal/grok-bot-agent-factory`)
+3. **Webhook**: Uncheck **Active** (not needed for review submissions)
+4. **Permissions**:
+   - **Pull requests**: **Read and write** (`pull_requests: write`)
+   - **Contents**: **Read-only** (`contents: read`)
+   - **Checks**: **Read-only** (`checks: read`)
+   - **Issues**: **Read-only** (`issues: read`)
+5. **Where can this GitHub App be installed?**: `Only on this account`
+
+### Step 2: Install App on Working Repository
+1. In the GitHub App settings, click **Install App**.
+2. Select your user account (`cesarchavezcal`) and choose **Only select repositories** -> select your working repo.
+
+### Step 3: Configure Reviewer Secret
+Generate an installation token or personal bot token, then store it as a repository secret:
+
+```bash
+gh secret set REVIEWER_GITHUB_TOKEN
+```
+
+*(The review engine automatically falls back to `GITHUB_APP_TOKEN`, `GH_TOKEN`, or `GITHUB_TOKEN` if `REVIEWER_GITHUB_TOKEN` is unset.)*
+
+---
+
+## 7. App Verification Skill (`.agents/skills/verify-app`)
 
 Before running autonomous merges on a new application:
 1. Customize `.agents/skills/verify-app/SKILL.md` (or copy it to `.agents/skills/verify-<app>/SKILL.md` and update `"verifySkill"` in `.factory/config.json`).
@@ -196,7 +249,7 @@ Before running autonomous merges on a new application:
 
 ---
 
-## 7. Syncing Upstream Template Updates (`./scripts/sync-template.sh`)
+## 8. Syncing Upstream Template Updates (`./scripts/sync-template.sh`)
 
 Derived working repositories can pull factory infrastructure updates from the private template (`cesarchavezcal/grok-bot-agent-factory`) at any time without touching application code:
 
@@ -238,7 +291,7 @@ Derived working repositories can pull factory infrastructure updates from the pr
 
 ---
 
-## 8. Troubleshooting
+## 9. Troubleshooting
 
 Common issues and their resolutions:
 
