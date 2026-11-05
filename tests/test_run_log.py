@@ -26,6 +26,9 @@ def _worker_append(args):
             auditor="grok-4.7",
             human_intervened={"occurred": False, "count": 0},
             pr_score=9.5,
+            review_result="approved",
+            review_rounds=1,
+            reviewer_model="grok-4.7",
             runs_dir=Path(runs_dir),
         )
 
@@ -59,6 +62,9 @@ class TestRunLog(unittest.TestCase):
             "builder",
             "auditor",
             "pr_score",
+            "review_result",
+            "review_rounds",
+            "reviewer_model",
         }
         self.assertEqual(required, expected_fields)
 
@@ -81,6 +87,9 @@ class TestRunLog(unittest.TestCase):
         self.assertEqual(record["auditor"], "grok-4.7")
         self.assertEqual(record["pr_score"], 9.8)
         self.assertEqual(record["human_intervened"], {"occurred": True, "count": 1})
+        self.assertIsNone(record["review_result"])
+        self.assertIsNone(record["review_rounds"])
+        self.assertIsNone(record["reviewer_model"])
         self.assertIsNotNone(record["kickoff_at"])
 
         # Verify file content on disk
@@ -89,6 +98,100 @@ class TestRunLog(unittest.TestCase):
         lines = read_runs(self.runs_dir)
         self.assertEqual(len(lines), 1)
         self.assertEqual(lines[0]["issue"], 38)
+
+    def test_record_run_with_review_metrics(self):
+        record = record_run(
+            issue=70,
+            pr=78,
+            result="merged",
+            builder="gemini-3.8-flash-high",
+            auditor="grok-4.7",
+            human_intervened=False,
+            pr_score=9.9,
+            review_result="approved",
+            review_rounds=2,
+            reviewer_model="grok-4.7",
+            runs_dir=self.runs_dir,
+        )
+
+        self.assertEqual(record["review_result"], "approved")
+        self.assertEqual(record["review_rounds"], 2)
+        self.assertEqual(record["reviewer_model"], "grok-4.7")
+
+        lines = read_runs(self.runs_dir)
+        self.assertEqual(len(lines), 1)
+        self.assertEqual(lines[0]["review_result"], "approved")
+        self.assertEqual(lines[0]["review_rounds"], 2)
+        self.assertEqual(lines[0]["reviewer_model"], "grok-4.7")
+
+    def test_review_validation_rules(self):
+        # 1. Invalid review_result enum
+        with self.assertRaises(RunLogError) as ctx:
+            record_run(
+                issue=70,
+                result="merged",
+                builder="gemini-3.8-flash-high",
+                auditor="grok-4.7",
+                review_result="rejected",
+                runs_dir=self.runs_dir,
+            )
+        self.assertIn("Field 'review_result'", str(ctx.exception))
+
+        # 2. Invalid review_rounds (exceeding max 3)
+        with self.assertRaises(RunLogError) as ctx:
+            record_run(
+                issue=70,
+                result="merged",
+                builder="gemini-3.8-flash-high",
+                auditor="grok-4.7",
+                review_result="changes_requested",
+                review_rounds=4,
+                reviewer_model="grok-4.7",
+                runs_dir=self.runs_dir,
+            )
+        self.assertIn("Field 'review_rounds'", str(ctx.exception))
+
+        # 3. Invalid review_rounds (< 1 when review was performed)
+        with self.assertRaises(RunLogError) as ctx:
+            record_run(
+                issue=70,
+                result="merged",
+                builder="gemini-3.8-flash-high",
+                auditor="grok-4.7",
+                review_result="approved",
+                review_rounds=0,
+                reviewer_model="grok-4.7",
+                runs_dir=self.runs_dir,
+            )
+        self.assertIn("Field 'review_rounds'", str(ctx.exception))
+
+        # 4. Valid skipped review
+        rec_skipped = record_run(
+            issue=70,
+            result="merged",
+            builder="gemini-3.8-flash-high",
+            auditor="grok-4.7",
+            review_result="skipped",
+            review_rounds=0,
+            reviewer_model=None,
+            runs_dir=self.runs_dir,
+        )
+        self.assertEqual(rec_skipped["review_result"], "skipped")
+        self.assertEqual(rec_skipped["review_rounds"], 0)
+
+        # 5. Invalid reviewer_model (empty string)
+        with self.assertRaises(RunLogError) as ctx:
+            record_run(
+                issue=70,
+                result="merged",
+                builder="gemini-3.8-flash-high",
+                auditor="grok-4.7",
+                review_result="approved",
+                review_rounds=1,
+                reviewer_model="",
+                runs_dir=self.runs_dir,
+            )
+        self.assertIn("Field 'reviewer_model'", str(ctx.exception))
 
     def test_validation_errors(self):
         # 1. Missing required field
@@ -154,6 +257,9 @@ class TestRunLog(unittest.TestCase):
             validate_run_record(rec)
             self.assertEqual(rec["result"], "merged")
             self.assertEqual(rec["builder"], "gemini-3.8-flash-high")
+            self.assertEqual(rec["review_result"], "approved")
+            self.assertEqual(rec["review_rounds"], 1)
+            self.assertEqual(rec["reviewer_model"], "grok-4.7")
 
 
 if __name__ == "__main__":
