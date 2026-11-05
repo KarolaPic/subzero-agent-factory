@@ -168,6 +168,7 @@ if [ -n "$REPO_SLUG" ]; then
 EOF
   )"; then
     echo "  ✓ Branch protection active on 'main' (required check: 'ci', strict up-to-date, conversation resolution, linear history)"
+    echo "     See docs/merge-policy.md for complete merge risk rules and manual approval guidelines."
   else
     if echo "$PROT_ERR" | grep -qiE "403|Upgrade to GitHub Pro|make this repository public"; then
       echo "  ⚠️  EXPLICIT WARNING (Branch Protection on '$REPO_SLUG:main'):"
