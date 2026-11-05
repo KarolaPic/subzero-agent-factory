@@ -40,6 +40,8 @@ jobs:
           test -x scripts/classify_pr_risk.py
           test -x scripts/score_pr.py
           test -x scripts/run_log.py
+          test -x scripts/find_or_create_issue.py
+          test -x scripts/validate_conventions.py
           test -f skills-lock.json
           test -f AGENTS.md
           python3 scripts/validate_models.py
@@ -122,6 +124,12 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           python3 scripts/classify_pr_risk.py --base origin/${{ github.base_ref }} --head HEAD --apply-pr ${{ github.event.pull_request.number }} || python3 scripts/classify_pr_risk.py --base origin/${{ github.base_ref }} --head HEAD
+
+      - name: Validate Conventional Branch & PR Title
+        if: github.event_name == 'pull_request'
+        run: |
+          python3 scripts/validate_conventions.py branch "${{ github.head_ref }}"
+          python3 scripts/validate_conventions.py pr-title "${{ github.event.pull_request.title }}"
 
       - name: Run Factory Python unit tests
         run: |

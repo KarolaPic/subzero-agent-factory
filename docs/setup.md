@@ -54,6 +54,11 @@ This creates/updates:
 - **Deploy Rule**: Intermediate sub-issues never deploy. Deploy occurs only on the final sub-issue of an epic (carrying the `deploy` label), after its green merge.
 - **Issue Closing Rule**: Every PR body uses `Closes #N` (never `Refs #N`). For epics, the final deploy sub-issue PR also includes `Closes #EPIC`. Agents never close issues by hand.
 - **Communication Rule**: Never comment on issues or PRs. When questions or reproduction blockers arise, stop and write them in the thread final message for dispatcher relay.
+- **Conventional Branch & Git Conventions ([`conventionalbranch.org`](https://conventionalbranch.org/))**:
+  - **Branch Naming**: All branches follow `<type>/<issue>-<description>` with permitted types (`feat/`, `fix/`, `chore/`, `docs/`, `refactor/`, `test/`, `hotfix/`, `release/`). Lowercase alphanumerics and single hyphens only.
+  - **Commit Messages**: All commits follow Conventional Commits: `<type>(<scope>): <summary> (#<issue>)`.
+  - **Pull Requests**: PR titles match Conventional Commits; PR bodies follow the mandatory 4-section format (`Why`, `What changed`, `How it was tested`, `Closes #N`).
+  - **Automated Validation**: Verified via `python3 scripts/validate_conventions.py`.
 
 ### Linear
 In Linear (**Workspace Settings → Labels**), create a label named **`agent`** (exact lowercase). Only Linear issues tagged with `agent` are dispatched.

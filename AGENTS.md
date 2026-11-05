@@ -80,6 +80,21 @@ What [`./scripts/init.sh`](scripts/init.sh) does (idempotent, safe to re-run at 
 - **Changelog Maintenance Rule (`CHANGELOG.md`)**:
   - The factory maintains [`CHANGELOG.md`](CHANGELOG.md) adhering to [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and Semantic Versioning standards.
   - Upon landing major initiatives or architectural upgrades, agents record changes under `## [Unreleased]` or the dated release section, citing relevant PR numbers and issues for full provenance.
+- **Conventional Branch, Commit & PR Standards ([`conventionalbranch.org`](https://conventionalbranch.org/))**:
+  - **Branch Naming (`conventionalbranch.org`)**:
+    - Pattern: `<type>/<issue>-<description>` (or `<type>/<description>`).
+    - Standard types: `feat/` (or `feature/`), `fix/` (or `bugfix/`), `chore/`, `docs/`, `refactor/`, `test/`, `hotfix/`, `release/`.
+    - Character rules: Only lowercase alphanumerics (`a-z`, `0-9`), single hyphens (`-`), and dots (`.`). Strictly zero uppercase, zero underscores, no consecutive hyphens/dots (`--`, `..`), and no leading or trailing hyphens or dots.
+    - Examples: `feat/94-conventional-branch-standards`, `fix/12-webhook-duplicates`, `chore/40-wire-run-log`, `docs/87-changelog-setup`.
+  - **Commit Message Format (Conventional Commits)**:
+    - Pattern: `<type>(<scope>): <summary> (#<issue>)`
+    - Types: `feat`, `fix`, `chore`, `docs`, `refactor`, `test`, `style`, `perf`.
+    - Examples: `feat(conventions): adopt conventional branch and commit standards (#94)`.
+  - **Pull Request Format**:
+    - PR Head Branch: Matches Conventional Branch format (`<type>/<issue>-<description>`).
+    - PR Title: Conforms to Conventional Commits: `<type>(<scope>): <summary> (#<issue>)`.
+    - PR Body: Conforms strictly to the 4-section PR template (`## Why`, `## What changed`, `## How it was tested`, `Closes #N`).
+  - **Validation Engine**: Validated via `scripts/validate_conventions.py` and unit tests in `tests/test_conventional_branch.py`.
 
 ---
 

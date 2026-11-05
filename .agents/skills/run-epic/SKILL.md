@@ -243,7 +243,7 @@ for SUB_NUM in "${SUB_ISSUES[@]}"; do
   # Step 2: Concurrency guard - claim issue
   gh issue edit "$SUB_NUM" --add-label "in-progress"
 
-  # Step 3: Branch checkout
+  # Step 3: Branch checkout (conforms to conventionalbranch.org: feat/<issue>-<slug>)
   BRANCH="feat/${SUB_NUM}-slice"
   # If remote branch exists, check out; otherwise create off origin/main
   if git ls-remote --heads origin "$BRANCH" | grep -q "$BRANCH"; then
