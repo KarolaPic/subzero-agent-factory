@@ -135,7 +135,11 @@ Enforce root-cause engineering discipline directly in the fix:
 2. **Branch & PR**:
    - Create branch: `fix/<issue-number>-<short-description>`.
    - Commit as `cesarchavezcal` (`cesarchavezcal@gmail.com`).
-   - **PR Template Mandate**: PR body MUST strictly follow the short 4-section template (`.github/PULL_REQUEST_TEMPLATE.md`): `Why`, `What changed`, `How it was tested` (combining root-cause reproduction evidence, runtime verification, and Grok audit verdict, with models used read dynamically from `models.yml`), and `Closes #N`.
+   - **T3 PR Scoring Rule (`scripts/score_pr.py`)**:
+     - T3 scores each opened PR diff using the configured `scorer` model from `models.yml` (default `gemini-3.8-flash-low`, signed-in model session, zero paid API keys).
+     - If the scorer model is unavailable, stop immediately and report in thread final message with zero fallback or retries.
+     - The PR score (1–10 + concise rationale) is placed in the PR body under `## How it was tested` (`- **PR Score**: <score>/10 — <short reason> (scorer: <model>)`).
+   - **PR Template Mandate**: PR body MUST strictly follow the short 4-section template (`.github/PULL_REQUEST_TEMPLATE.md`): `Why`, `What changed`, `How it was tested` (combining root-cause reproduction evidence, runtime verification, Grok audit verdict, and PR score, with models used read dynamically from `models.yml`), and `Closes #N`.
    - PR body MUST include `Closes #N` so GitHub automatically closes the bug report upon merge. If the bug is the final deploy sub-issue of an epic, also include `Closes #<EPIC_NUMBER>`.
 3. **Autonomous Reviewer Agent Gate ([`review-pr`](../review-pr/SKILL.md))**:
    - After opening the PR, the builder dispatches the autonomous reviewer agent (`scripts/review_pr.py`):
@@ -151,13 +155,17 @@ Enforce root-cause engineering discipline directly in the fix:
    - **`low-risk`**: Auto-merges upon green `ci` check.
    - **`normal`**: Auto-merges upon green `ci` check **AND** formal reviewer agent approval (`review-pr`).
    - **`high-risk` / `needs-approval`**: **NEVER auto-merges autonomously**. Halts and reports "waiting for César" in the thread final message per ADR 0001.
-5. **Merge Command (No Branch Deletion)**:
+5. **Merge Command & Run Log Recording**:
    - Execute squash merge:
      ```bash
      gh pr merge <PR_NUMBER> --squash
      ```
    - **Strict Rule**: NEVER pass `--delete-branch`. Never delete branches.
    - **No Bot Comments Invariant**: No bot comments on PRs or issues other than the formal PR review.
+   - **Run Log Recording**: Record the run outcome with the evaluated PR score into `.factory/runs/runs.jsonl`:
+     ```bash
+     python3 scripts/run_log.py record --issue <ISSUE_NUMBER> --pr <PR_NUMBER> --result merged --score <SCORE>
+     ```
 
 ---
 

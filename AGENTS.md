@@ -72,6 +72,11 @@ What [`./scripts/init.sh`](scripts/init.sh) does (idempotent, safe to re-run at 
   - Format conforms strictly to [`.factory/schemas/run.schema.json`](.factory/schemas/run.schema.json) with fields: `issue`, `pr`, `kickoff_at`, `pr_opened_at`, `first_review_at`, `merged_at`, `human_intervened` (bool + count), `result` (`merged` | `blocked` | `failed`), `builder`, `auditor`, `pr_score`, `review_result`, `review_rounds`, `reviewer_model`.
   - Appends are thread- and process-safe via `scripts/run_log.py` using advisory `fcntl.flock` on `.runs.lock` and `.gitattributes` `merge=union`.
   - Zero Secret Leakage: No tokens, credentials, or secrets may ever appear in the run log (`additionalProperties: false`).
+- **PR Score by T3 Rule (`scripts/score_pr.py`)**:
+  - During each run, T3 evaluates each opened PR using the configured `scorer` model through a signed-in model session (zero paid API keys).
+  - The score (1–10 + concise rationale) is placed in the PR body under `## How it was tested` (`- **PR Score**: <score>/10 — <short reason> (scorer: <model>)`) and written to `.factory/runs/runs.jsonl` under `pr_score`.
+  - If the scorer model is unavailable, T3 stops and reports immediately in the thread final message. Zero fallback models, zero retries.
+  - GitHub Actions on each PR run unit tests and validate the run log against its schema; workflows make zero model calls and use zero secrets.
 
 ---
 
@@ -85,6 +90,7 @@ Models are not hard-coded in the factory. They are configured at the repository 
 - **`planner`**: Handles architecture discovery, spec creation, and ticket planning (`wayfinder`, `to-spec`, `grill-with-docs`). Defaults to `builder`.
 - **`epic_planner`**: Decomposes initiative-level epics into vertical sub-issues (`plan-epic`). Defaults to `builder`.
 - **`subagents`**: Powers background task subagents and auxiliary workers. Defaults to `builder`.
+- **`scorer`**: Cheap model role (default: `gemini-3.8-flash-low`) used by T3 during runs to score PR diffs (1–10 scale) without paid API keys.
 
 ### Allowed Models (`models.allowed.yml`)
 The factory enforces a curated allowed list in [`models.allowed.yml`](models.allowed.yml):
@@ -93,7 +99,7 @@ The factory enforces a curated allowed list in [`models.allowed.yml`](models.all
 - `gemini-3.8-flash-high`
 - `grok-4.7`
 
-Default committed configuration: `builder: gemini-3.8-flash-high`, `auditor: grok-4.7`, with `planner`, `epic_planner`, and `subagents` defaulting to `gemini-3.8-flash-high`.
+Default committed configuration: `builder: gemini-3.8-flash-high`, `auditor: grok-4.7`, `scorer: gemini-3.8-flash-low`, with `planner`, `epic_planner`, and `subagents` defaulting to `gemini-3.8-flash-high`.
 
 ### Strict Invariants & Rules
 - **Auditor Must Differ from Builder**: The setup script refuses any configuration where `auditor == builder`, and CI fails on it.
@@ -136,7 +142,7 @@ Execution follows the official pstack [`poteto-mode`](.agents/skills/poteto-mode
    - Every opened PR MUST strictly adhere to the concise 4-section pull request template:
      - `## Why`: Brief explanation of the problem, motivation, and approach (1–3 sentences).
      - `## What changed`: Concise summary or diff-sketch of the modifications.
-     - `## How it was tested`: Combined runtime verification proof (e.g. `verify-app` or test suite command with `exitCode: 0`) and independent Grok audit verdict (`verdict: PASS`), alongside a short line stating models used (`builder: <model>`, `auditor: <model>`) dynamically read from `models.yml` (never an obsolete static table).
+     - `## How it was tested`: Combined runtime verification proof (e.g. `verify-app` or test suite command with `exitCode: 0`) and independent Grok audit verdict (`verdict: PASS`), alongside PR score evaluated by T3 (`- **PR Score**: <score>/10 — <short reason>`) and models used (`builder: <model>`, `auditor: <model>`, `scorer: <model>`) dynamically read from `models.yml` (never an obsolete static table).
      - `Closes #N`: Mandatory issue closing directive (never `Refs #N`). For the designated final deploy sub-issue of an epic, also include `Closes #<EPIC_NUMBER>`.
 5. **Merge Policy & Risk Classification Gate (`docs/merge-policy.md`)**:
    - **Three-Tier Governance (`scripts/classify_pr_risk.py`)**:

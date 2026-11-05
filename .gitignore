@@ -14,5 +14,6 @@ artifacts/
 !.factory/WORK-ITEM.example.json
 .DS_Store
 *.log
+.runs.lock
 __pycache__/
 *.py[cod]

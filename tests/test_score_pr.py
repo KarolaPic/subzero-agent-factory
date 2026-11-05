@@ -99,6 +99,13 @@ index 0000000..7654321
         self.assertIn("FATAL", res.stderr)
         self.assertIn("unavailable", res.stderr.lower())
 
+    def test_score_pr_cli_base_and_head(self):
+        cmd = [sys.executable, str(self.repo_root / "scripts" / "score_pr.py"), "--base", "HEAD~1", "--head", "HEAD", "--json"]
+        res = subprocess.run(cmd, capture_output=True, text=True)
+        self.assertEqual(res.returncode, 0)
+        self.assertIn('"score"', res.stdout)
+        self.assertIn("gemini-3.8-flash-low", res.stdout)
+
 
 if __name__ == "__main__":
     unittest.main()

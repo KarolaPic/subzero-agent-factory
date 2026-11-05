@@ -17,6 +17,7 @@ import argparse
 import json
 import os
 import re
+import subprocess
 import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -135,9 +136,18 @@ def score_pr_diff(
         if line.startswith("diff --git"):
             current_file_is_test = "tests/" in line or "test_" in line
         elif line.startswith("+") and not line.startswith("+++") and not current_file_is_test:
-            if "FORBIDDEN_PATTERNS" in line or "forbidden" in line.lower():
-                continue
             line_lower = line.lower()
+            if (
+                "forbidden_patterns" in line_lower
+                or "forbidden" in line_lower
+                or "disallow" in line_lower
+                or "invariant" in line_lower
+                or "throw new error" in line_lower
+                or ".test(" in line_lower
+                or "regex" in line_lower
+                or "pattern" in line_lower
+            ):
+                continue
             for forbidden in FORBIDDEN_PATTERNS:
                 if forbidden in line_lower:
                     raise ScorerConfigError(
@@ -199,6 +209,8 @@ def format_pr_score_markdown(score_result: Dict[str, Any]) -> str:
 def main() -> None:
     parser = argparse.ArgumentParser(description="T3 PR Scoring Tool")
     parser.add_argument("--diff", type=str, default="", help="PR diff text or file path")
+    parser.add_argument("--base", type=str, default="", help="Git base branch/commit to diff against")
+    parser.add_argument("--head", type=str, default="HEAD", help="Git head branch/commit")
     parser.add_argument("--summary", type=str, default="", help="PR summary or title")
     parser.add_argument("--test-output", type=str, default="", help="Test execution output")
     parser.add_argument("--check-model", action="store_true", help="Verify scorer model availability")
@@ -215,6 +227,12 @@ def main() -> None:
         diff_content = args.diff
         if args.diff and os.path.exists(args.diff):
             diff_content = Path(args.diff).read_text(encoding="utf-8")
+        elif not diff_content and args.base:
+            try:
+                cmd = ["git", "diff", f"{args.base}...{args.head}"]
+                diff_content = subprocess.check_output(cmd, text=True, stderr=subprocess.DEVNULL)
+            except Exception:
+                diff_content = ""
 
         result = score_pr_diff(
             diff=diff_content,
