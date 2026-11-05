@@ -29,6 +29,16 @@ This creates/updates:
   - *Precedence*: `epic` takes priority over all other labels. If an issue has `epic` + `bug` + `agent`, it routes to `plan-epic`.
 - **`bug` + `agent`** -> **`fix-bug`**: Reproduction-first defect workflow. Starts with a short plan in the thread. Reproduces first (if unable to reproduce or open questions exist, stops and asks in thread final message; if no questions, writes `"No questions, starting build"` and builds immediately in the same run) -> writes failing test -> fixes root cause (`ce-debug`, `tdd`, `principle-fix-root-causes`) -> verifies all tests + runs app once -> Grok audit -> PR `Closes #N` -> merge on green CI.
 - **`agent` alone (or with `feature`)** -> **`implement-ticket`**: Full lifecycle: starts with a short plan in the thread. If open questions exist, stops and asks in thread final message; if no questions, writes `"No questions, starting build"` and continues directly to build in the same run without waiting for a separate build message (`wayfinder` + `grill-with-docs` -> `poteto-mode` -> Grok audit -> rework rule -> PR `Closes #N` -> merge on green CI).
+- **Manual Epic Runner: `$run-epic #N`** -> **`run-epic`**: Manual orchestrator command to run an entire epic loop from a single command in T3 Code without requiring Grok Bot.
+  - **Decomposition or Reuse**: Automatically checks if `Part of #N` sub-issues exist; if none exist, calls `plan-epic #N` to decompose into vertical tracer-bullet sub-issues with `agent` labels and a single `deploy` label on the final sub-issue.
+  - **Anti-Clash & Concurrency Guard**: Inspects `in-progress` label, open PRs, and active branch state to prevent colliding with Grok Bot or concurrent agents.
+  - **Sequential Execution**: Runs `implement-ticket` (or `fix-bug` for `bug` sub-issues) on each sub-issue one by one in dependency order.
+  - **Model Resolution**: Resolves models from `models.yml` (`epic_planner`, `planner`, `builder`, `auditor`). Halts immediately with no fallback or retries if any model is unavailable. Zero Claude, GPT, or Argon.
+  - **GitHub Account Invariant**: Automatically switches active `gh` auth to `cesarchavezcal` for git/gh operations and restores the prior active account upon completion or pause.
+  - **Idempotency & Resumability**: Re-running `$run-epic #N` skips already-merged sub-issues, reattaches to open PRs, and continues from where it stopped without duplicating sub-issues or PRs.
+  - **Merge & Deploy Rules**: PRs merge via squash merge on green `ci` + audit pass. Deploys only on the final sub-issue with the `deploy` label, closing both the sub-issue and parent epic (`Closes #SUB_ISSUE` and `Closes #EPIC`).
+  - **Human Gates**: Stops and reports questions or pauses in the thread final message (zero issue/PR comments).
+  - **Backward Compatibility**: `plan-epic` and `implement-ticket` remain independently functional with identical behavior.
 - **Plan-Then-Build Rule**:
   - Every issue thread starts with a short plan in the thread (files, tests, verification).
   - If there is ANY open question, ask it in the thread and stop without editing files. Wait for the human answer, then build.

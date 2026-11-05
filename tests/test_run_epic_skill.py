@@ -88,6 +88,28 @@ class TestRunEpicSkill(unittest.TestCase):
         self.assertIn("Resumability", content)
         self.assertIn("Dry-Run Walkthrough", content)
 
+    def test_agents_md_documentation(self):
+        agents_path = os.path.join(self.repo_root, "AGENTS.md")
+        self.assertTrue(os.path.isfile(agents_path))
+        with open(agents_path, "r", encoding="utf-8") as f:
+            content = f.read()
+
+        self.assertIn("$run-epic", content)
+        self.assertIn(".agents/skills/run-epic/SKILL.md", content)
+        self.assertIn("plan-epic", content)
+        self.assertIn("implement-ticket", content)
+
+    def test_setup_md_documentation(self):
+        setup_path = os.path.join(self.repo_root, "docs", "setup.md")
+        self.assertTrue(os.path.isfile(setup_path))
+        with open(setup_path, "r", encoding="utf-8") as f:
+            content = f.read()
+
+        self.assertIn("$run-epic", content)
+        self.assertIn("Anti-Clash", content)
+        self.assertIn("Idempotency", content)
+        self.assertIn("cesarchavezcal", content)
+
 
 if __name__ == "__main__":
     unittest.main()
