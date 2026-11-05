@@ -154,10 +154,10 @@ gh api --method PATCH "repos/$REPO" \
 
 ---
 
-## 5. Branch Protection & Ruleset on `main` (Required Check: `ci` + 1 Approving Review)
+## 5. Branch Protection & Ruleset on `main` (Required Check: `ci` Only, Strict Linear History)
 
 The factory enforces quality gates on `main` via branch rulesets and protection:
-- **1 Approving Review**: Formal PR review approval from the autonomous Reviewer Agent (`review-pr`) or `cesarchavezcal`.
+- **Required Reviews**: `0` required approving reviews (`required_pull_request_reviews: null`). Reviewer agent approval is recorded directly in the PR body and run log, enabling single-account operation under `cesarchavezcal`.
 - **Status Check**: Strict check **`ci`** from `.github/workflows/ci.yml`.
 
 ### CLI (`gh api PUT`)
@@ -170,11 +170,7 @@ gh api --method PUT "repos/$REPO/branches/main/protection" --input - <<'EOF'
     "contexts": ["ci"]
   },
   "enforce_admins": false,
-  "required_pull_request_reviews": {
-    "dismiss_stale_reviews": true,
-    "require_code_owner_reviews": false,
-    "required_approving_review_count": 1
-  },
+  "required_pull_request_reviews": null,
   "restrictions": null,
   "required_linear_history": true,
   "allow_force_pushes": false,
@@ -193,9 +189,7 @@ Navigate to **Settings → Rules → Rulesets → New branch ruleset**:
    - [x] **Restrict deletions**
    - [x] **Block force pushes**
    - [x] **Require linear history**
-   - [x] **Require a pull request before merging**:
-     - Required approvals: **1**
-     - Dismiss stale pull request approvals when new commits are pushed
+   - [ ] **Require a pull request before merging** (leave required approvals at 0 or null; gate is `ci` + agent approval)
    - [x] **Require status checks to pass**:
      - Require branches to be up to date before merging
      - Status checks: **`ci`**
@@ -210,34 +204,14 @@ gh repo edit "$REPO" --visibility public --accept-visibility-change-consequences
 
 ---
 
-## 6. Reviewer Agent GitHub App Setup & Permissions
+## 6. Reviewer Agent Inspection & Merge Gate
 
-The autonomous reviewer agent ([`review-pr`](../.agents/skills/review-pr/SKILL.md) / [`scripts/review_pr.py`](../scripts/review_pr.py)) submits formal GitHub PR reviews (`APPROVE` or `REQUEST_CHANGES`) under a dedicated bot identity.
+The autonomous reviewer agent ([`review-pr`](../.agents/skills/review-pr/SKILL.md) / [`scripts/review_pr.py`](../scripts/review_pr.py)) inspects PR diffs, task cards, and test evidence under the `auditor` model from `models.yml`.
 
-### Step 1: Register GitHub App
-In GitHub (**Settings → Developer Settings → GitHub Apps → New GitHub App**):
-1. **GitHub App name**: `grok-bot-reviewer` (or unique name for your factory)
-2. **Homepage URL**: Repository URL (e.g. `https://github.com/cesarchavezcal/grok-bot-agent-factory`)
-3. **Webhook**: Uncheck **Active** (not needed for review submissions)
-4. **Permissions**:
-   - **Pull requests**: **Read and write** (`pull_requests: write`)
-   - **Contents**: **Read-only** (`contents: read`)
-   - **Checks**: **Read-only** (`checks: read`)
-   - **Issues**: **Read-only** (`issues: read`)
-5. **Where can this GitHub App be installed?**: `Only on this account`
+- **Verdict Recording**: Rather than requiring a secondary bot account or GitHub App, the reviewer verdict (`APPROVE` or `REQUEST_CHANGES`), findings, and review round number are recorded directly in the PR body under `## Reviewer Agent` and in the run log (`.factory/runs/runs.jsonl`).
+- **Merge Gate**: The auto-merge gate is strictly green `ci` + Reviewer Agent Approve.
+- **Single Account**: All PR creation, body edits, and merges are performed under `cesarchavezcal`.
 
-### Step 2: Install App on Working Repository
-1. In the GitHub App settings, click **Install App**.
-2. Select your user account (`cesarchavezcal`) and choose **Only select repositories** -> select your working repo.
-
-### Step 3: Configure Reviewer Secret
-Generate an installation token or personal bot token, then store it as a repository secret:
-
-```bash
-gh secret set REVIEWER_GITHUB_TOKEN
-```
-
-*(The review engine automatically falls back to `GITHUB_APP_TOKEN`, `GH_TOKEN`, or `GITHUB_TOKEN` if `REVIEWER_GITHUB_TOKEN` is unset.)*
 
 ---
 

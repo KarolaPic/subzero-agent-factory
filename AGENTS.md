@@ -147,7 +147,7 @@ Execution follows the official pstack [`poteto-mode`](.agents/skills/poteto-mode
 5. **Merge Policy & Risk Classification Gate (`docs/merge-policy.md`)**:
    - **Three-Tier Governance (`scripts/classify_pr_risk.py`)**:
      - **`low-risk`**: Docs only, tests only, or a small fix under 50 changed lines touching zero high-risk paths. Auto-merges upon green `ci` and passing audit/review.
-     - **`normal`**: Standard code changes ($\ge 50$ lines) touching zero high-risk paths. Routes to the autonomous reviewer agent (`review-pr`); auto-merges upon green `ci` and formal reviewer approval.
+     - **`normal`**: Standard code changes ($\ge 50$ lines) touching zero high-risk paths. Routes to the autonomous reviewer agent (`review-pr`); auto-merges upon green `ci` and reviewer agent approval recorded in the PR body.
      - **`high-risk`**: Touches auth/secrets (`.env*`, `auth/*`, `secrets/*`), workflows (`.github/workflows/*`), branch rules/rulesets (`.github/rulesets/*`), dependencies, models (`models*.yml`), migrations/deletions (`migrations/*`, `*.sql`), deploy (`deploy/*`, `Dockerfile*`), factory config (`.factory/*`), or control plane files (`.agents/skills/*`, `AGENTS.md` per ADR 0001).
    - **No Auto-Merge for `high-risk`**: If a PR is classified as `high-risk` (or labeled `needs-approval`), the agent runner **MUST NOT auto-merge** it; it halts and reports `"waiting for César"` in the thread final message.
 6. **Squash Merge & Branch Preservation**:

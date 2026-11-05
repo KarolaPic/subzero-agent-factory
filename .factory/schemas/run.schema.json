@@ -97,7 +97,7 @@
     "review_result": {
       "type": ["string", "null"],
       "enum": ["approved", "changes_requested", "skipped", null],
-      "description": "Outcome of formal PR review: approved, changes_requested, skipped, or null"
+      "description": "Outcome of reviewer agent evaluation: approved, changes_requested, skipped, or null"
     },
     "review_rounds": {
       "type": ["integer", "null"],

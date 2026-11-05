@@ -12,12 +12,16 @@ from scripts.review_pr import (
     ModelConfigurationError,
     ReviewerError,
     TaskCardValidationError,
+    count_existing_reviews,
     evaluate_review,
+    fetch_pr_body,
     load_yaml_file,
     parse_diff_files,
     parse_task_card,
+    record_pr_review_in_body,
     resolve_and_validate_models,
     submit_formal_review,
+    update_pr_body_with_verdict,
 )
 
 
@@ -56,12 +60,15 @@ class TestReviewPrSkill(unittest.TestCase):
         self.assertIn("diff", content.lower())
         self.assertIn("test", content.lower())
 
-    def test_formal_review_submission_and_bot_identity(self):
+    def test_pr_body_review_verdict_and_account_identity(self):
         content = self.skill_path.read_text(encoding="utf-8")
         self.assertIn("APPROVE", content)
         self.assertIn("REQUEST_CHANGES", content)
-        self.assertIn("gh pr review", content)
-        self.assertRegex(content, r"(?i)github app|reviewer token")
+        self.assertIn("gh pr edit", content)
+        self.assertIn("cesarchavezcal", content)
+        self.assertNotIn("gh pr review", content)
+        self.assertNotIn("REVIEWER_GITHUB_TOKEN", content)
+        self.assertNotIn("GITHUB_APP_TOKEN", content)
 
     def test_max_rounds_loop_guard(self):
         content = self.skill_path.read_text(encoding="utf-8")
@@ -219,54 +226,106 @@ class TestReviewPrEngine(unittest.TestCase):
         self.assertTrue(any("exceeded maximum permitted rounds" in f for f in eval_res["findings"]))
         self.assertIn("César", eval_res["summary"])
 
+    def test_no_gh_pr_review_or_tokens_in_engine_code(self):
+        engine_path = self.repo_root / "scripts" / "review_pr.py"
+        code = engine_path.read_text(encoding="utf-8")
+        self.assertNotIn("gh pr review", code)
+        self.assertNotIn("REVIEWER_GITHUB_TOKEN", code)
+        self.assertNotIn("GITHUB_APP_TOKEN", code)
+
+    def test_update_pr_body_with_verdict_append(self):
+        body = "## Goal\nTest\n\n## Done when\n- [x] Item\n"
+        summary = "## Reviewer Agent: Approved (Round 1/3)\n\nAll verified."
+        updated = update_pr_body_with_verdict(body, summary)
+        self.assertIn("## Goal", updated)
+        self.assertIn("## Reviewer Agent: Approved (Round 1/3)", updated)
+
+    def test_update_pr_body_with_verdict_replace(self):
+        body = (
+            "## Goal\nTest\n\n"
+            "## Reviewer Agent: Changes Requested (Round 1/3)\n\nOld findings\n\n"
+            "## Verification\nEvidence\n"
+        )
+        summary = "## Reviewer Agent: Approved (Round 2/3)\n\nApproved now."
+        updated = update_pr_body_with_verdict(body, summary)
+        self.assertIn("## Reviewer Agent: Approved (Round 2/3)", updated)
+        self.assertNotIn("Changes Requested (Round 1/3)", updated)
+        self.assertIn("## Verification", updated)
+
+    @patch("scripts.review_pr.fetch_pr_body")
     @patch("subprocess.run")
-    def test_submit_formal_review_approve(self, mock_run):
+    def test_record_pr_review_in_body_approve(self, mock_run, mock_fetch):
+        mock_fetch.return_value = "## Goal\nTest\n"
         mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
 
-        res = submit_formal_review(
+        res = record_pr_review_in_body(
             pr_number=69,
             verdict="APPROVE",
-            body="Looks good",
-            token="ghp_mocktoken123",
+            body="## Reviewer Agent: Approved (Round 1/3)\n\nLooks good",
             dry_run=False,
         )
-        self.assertTrue(res["submitted"])
+        self.assertTrue(res["recorded"])
         self.assertEqual(res["verdict"], "APPROVE")
         mock_run.assert_called_once()
         cmd = mock_run.call_args[0][0]
         self.assertIn("gh", cmd)
         self.assertIn("pr", cmd)
-        self.assertIn("review", cmd)
+        self.assertIn("edit", cmd)
         self.assertIn("69", cmd)
-        self.assertIn("--approve", cmd)
         self.assertIn("--body", cmd)
+        body_arg = cmd[cmd.index("--body") + 1]
+        self.assertIn("## Reviewer Agent: Approved (Round 1/3)", body_arg)
 
+    @patch("scripts.review_pr.fetch_pr_body")
     @patch("subprocess.run")
-    def test_submit_formal_review_request_changes(self, mock_run):
+    def test_record_pr_review_in_body_request_changes(self, mock_run, mock_fetch):
+        mock_fetch.return_value = "## Goal\nTest\n"
         mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
 
-        res = submit_formal_review(
+        res = record_pr_review_in_body(
             pr_number=69,
             verdict="REQUEST_CHANGES",
-            body="Needs fixes",
-            token="ghp_mocktoken123",
+            body="## Reviewer Agent: Changes Requested (Round 1/3)\n\nNeeds fixes",
             dry_run=False,
         )
-        self.assertTrue(res["submitted"])
+        self.assertTrue(res["recorded"])
         self.assertEqual(res["verdict"], "REQUEST_CHANGES")
         cmd = mock_run.call_args[0][0]
-        self.assertIn("--request-changes", cmd)
+        self.assertIn("edit", cmd)
+        self.assertIn("--body", cmd)
 
-    def test_submit_formal_review_dry_run(self):
-        res = submit_formal_review(
+    def test_record_pr_review_in_body_dry_run(self):
+        res = record_pr_review_in_body(
             pr_number=69,
             verdict="APPROVE",
             body="Dry run body",
             dry_run=True,
         )
-        self.assertFalse(res["submitted"])
+        self.assertFalse(res["recorded"])
         self.assertTrue(res["dry_run"])
         self.assertEqual(res["verdict"], "APPROVE")
+
+    def test_count_existing_reviews_from_pr_body(self):
+        body = "## Goal\n...\n\n## Reviewer Agent: Changes Requested (Round 2/3)\n\nFindings"
+        round_num = count_existing_reviews(pr_body=body)
+        self.assertEqual(round_num, 3)
+
+    def test_count_existing_reviews_default(self):
+        round_num = count_existing_reviews(pr_body="## Goal\nOnly goal\n")
+        self.assertEqual(round_num, 1)
+
+    def test_count_existing_reviews_from_run_log(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp_root = Path(tmpdir)
+            runs_dir = tmp_root / ".factory" / "runs"
+            runs_dir.mkdir(parents=True)
+            runs_file = runs_dir / "runs.jsonl"
+            runs_file.write_text(
+                json.dumps({"pr": 99, "issue": 12, "review_rounds": 2}) + "\n",
+                encoding="utf-8",
+            )
+            round_num = count_existing_reviews(pr_number=99, repo_root=tmp_root)
+            self.assertEqual(round_num, 3)
 
     def test_cli_execution_dry_run_json(self):
         with tempfile.TemporaryDirectory() as tmpdir:

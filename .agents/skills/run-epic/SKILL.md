@@ -46,12 +46,12 @@ $run-epic #N
   │      └─ Open PR (Closes #<SUB_ISSUE>)
   ├─ 4. Reviewer Agent Gate (review-pr):
   │      ├─ Execute review_pr.py --pr <PR> --issue <SUB_ISSUE>
-  │      ├─ Formally submits APPROVE or REQUEST_CHANGES (up to 3 rounds)
+  │      ├─ Records evaluation in PR body and run log (up to 3 rounds)
   │      └─ If unapproved after 3 rounds ──► HALT & report to César
   ├─ 5. Three-Tier Risk Merge Gate:
   │      ├─ Required status check 'ci' MUST be green
   │      ├─ low-risk ──► auto squash merge
-  │      ├─ normal ──► auto squash merge on green CI + review-pr APPROVE
+  │      ├─ normal ──► auto squash merge on green CI + reviewer agent APPROVE recorded in PR body
   │      ├─ high-risk / needs-approval ──► STOP and ask César in thread final message
   │      └─ gh pr merge <PR> --squash (NEVER pass --delete-branch)
   ├─ 6. Log Run: Append run outcome to .factory/runs/runs.jsonl with review metrics
