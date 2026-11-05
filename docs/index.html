@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Grok Bot Agent Factory — Operational Dashboard</title>
+  <style>
+    :root {
+      --bg: #090d16;
+      --card-bg: #111726;
+      --card-border: #1e293b;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --primary: #38bdf8;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --badge-bg: #1e293b;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text-main);
+      min-height: 100vh;
+      padding: 2rem 1.5rem;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid var(--card-border);
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .title-group h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .title-group p {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      margin-top: 0.25rem;
+    }
+
+    .badge-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(16, 185, 129, 0.1);
+      color: var(--success);
+      border: 1px solid rgba(16, 185, 129, 0.2);
+      border-radius: 9999px;
+      padding: 0.35rem 0.85rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    .badge-status .dot {
+      width: 8px;
+      height: 8px;
+      background-color: var(--success);
+      border-radius: 50%;
+    }
+
+    /* Grid of Metrics */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 0.75rem;
+      padding: 1.25rem;
+    }
+
+    .card-title {
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    .card-value {
+      font-size: 1.85rem;
+      font-weight: 700;
+      color: var(--text-main);
+      display: flex;
+      align-items: baseline;
+      gap: 0.35rem;
+    }
+
+    .card-subtitle {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 0.35rem;
+    }
+
+    /* Runs Section */
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    .section-header h2 {
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+
+    .table-container {
+      background-color: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 0.75rem;
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+      text-align: left;
+    }
+
+    th {
+      background-color: rgba(255, 255, 255, 0.02);
+      padding: 0.85rem 1rem;
+      color: var(--text-muted);
+      font-weight: 600;
+      border-bottom: 1px solid var(--card-border);
+    }
+
+    td {
+      padding: 0.85rem 1rem;
+      border-bottom: 1px solid var(--card-border);
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    .pill {
+      display: inline-block;
+      padding: 0.2rem 0.55rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: capitalize;
+    }
+
+    .pill-merged {
+      background-color: rgba(16, 185, 129, 0.15);
+      color: var(--success);
+    }
+
+    .pill-blocked {
+      background-color: rgba(245, 158, 11, 0.15);
+      color: var(--warning);
+    }
+
+    .pill-failed {
+      background-color: rgba(239, 68, 68, 0.15);
+      color: var(--danger);
+    }
+
+    .empty-state {
+      padding: 3rem 1.5rem;
+      text-align: center;
+      color: var(--text-muted);
+    }
+
+    .empty-state p {
+      margin-top: 0.5rem;
+      font-size: 0.9rem;
+    }
+
+    footer {
+      margin-top: 3rem;
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    footer a {
+      color: var(--primary);
+      text-decoration: none;
+    }
+
+    footer a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="title-group">
+        <h1>Grok Bot Agent Factory</h1>
+        <p>Operational Performance & Run Metrics</p>
+      </div>
+      <div class="badge-status">
+        <span class="dot"></span>
+        <span>Pipeline Operational</span>
+      </div>
+    </header>
+
+    <!-- Top Metric Cards -->
+    <div class="metrics-grid">
+      <!-- PRs Opened & Merged -->
+      <div class="card">
+        <div class="card-title">PRs Opened</div>
+        <div class="card-value" id="prs-opened">0</div>
+        <div class="card-subtitle">Total pull requests generated</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">PRs Merged</div>
+        <div class="card-value" id="prs-merged">0</div>
+        <div class="card-subtitle" id="prs-merge-rate">0% completion rate</div>
+      </div>
+
+      <!-- Kickoff to PR Duration -->
+      <div class="card">
+        <div class="card-title">Kickoff → PR</div>
+        <div class="card-value" id="kickoff-to-pr">0s</div>
+        <div class="card-subtitle">Average planning & build latency</div>
+      </div>
+
+      <!-- PR to First Review Duration -->
+      <div class="card">
+        <div class="card-title">PR → First Review</div>
+        <div class="card-value" id="pr-to-review">0s</div>
+        <div class="card-subtitle">Average audit interrogation latency</div>
+      </div>
+
+      <!-- Review to Merge Duration -->
+      <div class="card">
+        <div class="card-title">Review → Merge</div>
+        <div class="card-value" id="review-to-merge">0s</div>
+        <div class="card-subtitle">Average CI and merge policy gate</div>
+      </div>
+
+      <!-- Human Interventions -->
+      <div class="card">
+        <div class="card-title">Human Interventions</div>
+        <div class="card-value" id="human-interventions">0</div>
+        <div class="card-subtitle" id="interventions-per-pr">0.0 per PR average</div>
+      </div>
+    </div>
+
+    <!-- Recent Runs Feed -->
+    <div class="section-header">
+      <h2>Recent Agent Runs</h2>
+      <span id="total-runs-badge" style="font-size: 0.85rem; color: var(--text-muted);">0 runs loaded</span>
+    </div>
+
+    <div class="table-container">
+      <div id="empty-state" class="empty-state">
+        <strong>No agent runs recorded yet</strong>
+        <p>Runs appended to <code>.factory/runs/runs.jsonl</code> will automatically appear here.</p>
+      </div>
+
+      <table id="runs-table" style="display: none;">
+        <thead>
+          <tr>
+            <th>Issue</th>
+            <th>PR</th>
+            <th>Result</th>
+            <th>Builder</th>
+            <th>Auditor</th>
+            <th>Interventions</th>
+            <th>Kickoff → PR</th>
+            <th>PR → Review</th>
+            <th>Review → Merge</th>
+          </tr>
+        </thead>
+        <tbody id="runs-tbody">
+          <!-- Populated by JavaScript -->
+        </tbody>
+      </table>
+    </div>
+
+    <footer>
+      <p>Grok Bot Agent Factory • Deployed via GitHub Pages • <a href="https://github.com/cesarchavezcal/grok-bot-agent-factory" target="_blank" rel="noopener">GitHub Repository</a> • <a href="pages-setup.md">Pages Setup Guide</a></p>
+    </footer>
+  </div>
+
+  <script src="metrics.js"></script>
+  <script>
+    (function () {
+      async function loadRunLog() {
+        const candidatePaths = [
+          '../.factory/runs/runs.jsonl',
+          './.factory/runs/runs.jsonl',
+          'https://raw.githubusercontent.com/cesarchavezcal/grok-bot-agent-factory/main/.factory/runs/runs.jsonl'
+        ];
+
+        let rawLog = '';
+        for (const path of candidatePaths) {
+          try {
+            const resp = await fetch(path);
+            if (resp.ok) {
+              rawLog = await resp.text();
+              if (rawLog.trim()) break;
+            }
+          } catch (e) {
+            // Try next candidate path
+          }
+        }
+
+        renderDashboard(rawLog);
+      }
+
+      function renderDashboard(rawLog) {
+        const records = window.DashboardMetrics.parseRunLog(rawLog);
+        const metrics = window.DashboardMetrics.computeMetrics(records);
+
+        // Update Summary Cards
+        document.getElementById('prs-opened').textContent = metrics.prsOpened;
+        document.getElementById('prs-merged').textContent = metrics.prsMerged;
+
+        const rate = metrics.prsOpened > 0 ? Math.round((metrics.prsMerged / metrics.prsOpened) * 100) : 0;
+        document.getElementById('prs-merge-rate').textContent = rate + '% completion rate';
+
+        document.getElementById('kickoff-to-pr').textContent = window.DashboardMetrics.formatDuration(metrics.avgKickoffToPrSeconds);
+        document.getElementById('pr-to-review').textContent = window.DashboardMetrics.formatDuration(metrics.avgPrToReviewSeconds);
+        document.getElementById('review-to-merge').textContent = window.DashboardMetrics.formatDuration(metrics.avgReviewToMergeSeconds);
+
+        document.getElementById('human-interventions').textContent = metrics.totalInterventions;
+        document.getElementById('interventions-per-pr').textContent = metrics.interventionsPerPr + ' per PR average';
+
+        document.getElementById('total-runs-badge').textContent = metrics.totalRuns + ' runs loaded';
+
+        // Update Runs Table
+        const emptyState = document.getElementById('empty-state');
+        const runsTable = document.getElementById('runs-table');
+        const tbody = document.getElementById('runs-tbody');
+        tbody.innerHTML = '';
+
+        if (!metrics.runs || metrics.runs.length === 0) {
+          emptyState.style.display = 'block';
+          runsTable.style.display = 'none';
+        } else {
+          emptyState.style.display = 'none';
+          runsTable.style.display = 'table';
+
+          metrics.runs.forEach(function (r) {
+            const tr = document.createElement('tr');
+
+            const issueText = r.issue ? '#' + r.issue : '—';
+            const prText = r.pr ? '#' + r.pr : '—';
+            const resultClass = r.result === 'merged' ? 'pill-merged' : (r.result === 'blocked' ? 'pill-blocked' : 'pill-failed');
+
+            tr.innerHTML = `
+              <td><strong>${issueText}</strong></td>
+              <td>${prText}</td>
+              <td><span class="pill ${resultClass}">${r.result}</span></td>
+              <td><code>${r.builder}</code></td>
+              <td><code>${r.auditor}</code></td>
+              <td>${r.interventions}</td>
+              <td>${window.DashboardMetrics.formatDuration(r.kickoffToPrSec)}</td>
+              <td>${window.DashboardMetrics.formatDuration(r.prToReviewSec)}</td>
+              <td>${window.DashboardMetrics.formatDuration(r.reviewToMergeSec)}</td>
+            `;
+            tbody.appendChild(tr);
+          });
+        }
+      }
+
+      window.addEventListener('DOMContentLoaded', loadRunLog);
+    })();
+  </script>
+</body>
+</html>
