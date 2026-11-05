@@ -65,6 +65,11 @@ What [`./scripts/init.sh`](scripts/init.sh) does (idempotent, safe to re-run at 
   - Every commit, push, and PR must use the GitHub account `cesarchavezcal`.
   - Check `gh auth status` first before any git push or `gh` command; if the active account is not `cesarchavezcal`, remember the previous active account, switch with `gh auth switch --user cesarchavezcal`, and switch back to the earlier account when done.
   - Maintain the git email `cesarchavezcal@gmail.com` via `includeIf`, and never change the global git email.
+- **Run Log File Rule (`.factory/runs/runs.jsonl`)**:
+  - Each agent run appends exactly one line to `.factory/runs/runs.jsonl` upon conclusion (end of run, after merge, block, or failure).
+  - Format conforms strictly to [`.factory/schemas/run.schema.json`](.factory/schemas/run.schema.json) with fields: `issue`, `pr`, `kickoff_at`, `pr_opened_at`, `first_review_at`, `merged_at`, `human_intervened` (bool + count), `result` (`merged` | `blocked` | `failed`), `builder`, `auditor`, `pr_score`.
+  - Appends are thread- and process-safe via `scripts/run_log.py` using advisory `fcntl.flock` on `.runs.lock` and `.gitattributes` `merge=union`.
+  - Zero Secret Leakage: No tokens, credentials, or secrets may ever appear in the run log (`additionalProperties: false`).
 
 ---
 
