@@ -134,11 +134,12 @@ When operating in an environment where Grok Bot may also be listening for `agent
    - `planner`: used for sub-issue planning and spec authoring.
    - `builder`: used for TDD implementation and runtime verification.
    - `auditor`: used for independent adversarial interrogation.
+   - `scorer`: cheap model role (default `gemini-3.8-flash-low`) used by T3 during runs to score PR diffs (1–10 scale) without paid API keys.
 2. **Strict Invariants**:
    - **Auditor Must Differ from Builder**: Enforce `auditor != builder`.
    - **Model Availability Check**:
      - Verify that all configured models are present and accessible in the environment.
-     - **Model Unavailability Rule**: If any required model is unavailable, **STOP IMMEDIATELY**.
+     - **Model Unavailability Rule**: If any required model (including `scorer`) is unavailable, **STOP IMMEDIATELY**.
      - **NEVER use a fallback model, and NEVER retry**.
      - Write an explicit alert in the thread final message citing the missing model.
    - **No Prohibited Models**: Strictly zero Claude, GPT, or Argon models.
@@ -207,8 +208,15 @@ for SUB_NUM in "${SUB_ISSUES[@]}"; do
   # B. Independent adversarial audit (grok-4.7): verdict MUST be PASS
   # Rework rule: up to 2 rework attempts if audit or verification fails
 
-  # Step 6: PR creation or update
-  # Ensure PR body contains correct Closes directive
+  # Step 6: PR creation and T3 PR scoring
+  # T3 evaluates the PR diff using the configured 'scorer' model (zero paid API keys)
+  # If the scorer model is unavailable, stop immediately and report in thread final message
+  SCORE_JSON=$(python3 scripts/score_pr.py --base origin/main --head HEAD --json)
+  PR_SCORE=$(echo "$SCORE_JSON" | jq -r '.score')
+  SCORE_REASON=$(echo "$SCORE_JSON" | jq -r '.reason')
+  SCORER_MODEL=$(echo "$SCORE_JSON" | jq -r '.model')
+
+  # Ensure PR body contains correct Closes directive and PR score in ## How it was tested
   IS_DEPLOY=$(gh issue view "$SUB_NUM" --json labels --jq '[.labels[].name] | contains(["deploy"])')
   if [ "$IS_DEPLOY" = "true" ]; then
     CLOSING_DIRECTIVE="Closes #${SUB_NUM}\nCloses #${EPIC_NUMBER}"
@@ -246,9 +254,9 @@ for SUB_NUM in "${SUB_ISSUES[@]}"; do
   gh pr merge "$PR_NUM" --squash
   # NOTE: NEVER pass --delete-branch. Branches are always preserved.
 
-  # Step 8: Log run outcome with review metrics (scripts/run_log.py)
+  # Step 8: Log run outcome with review metrics and PR score (scripts/run_log.py)
   if [ -f "scripts/run_log.py" ]; then
-    python3 scripts/run_log.py record --issue "$SUB_NUM" --pr "$PR_NUM" --result merged
+    python3 scripts/run_log.py record --issue "$SUB_NUM" --pr "$PR_NUM" --result merged --score "$PR_SCORE"
   fi
 
   # Step 9: Remove in-progress label

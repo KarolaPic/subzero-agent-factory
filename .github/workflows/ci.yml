@@ -38,9 +38,12 @@ jobs:
           bash -n scripts/setup-models.sh
           test -x scripts/validate_models.py
           test -x scripts/classify_pr_risk.py
+          test -x scripts/score_pr.py
+          test -x scripts/run_log.py
           test -f skills-lock.json
           test -f AGENTS.md
           python3 scripts/validate_models.py
+          python3 scripts/score_pr.py --check-model
           node -e '
             const fs = require("fs");
             const rawConfig = fs.readFileSync(".factory/config.json", "utf8");
@@ -82,6 +85,15 @@ jobs:
               throw new Error("gemini-4-argon reference detected in .cursor/rules/factory.mdc");
             }
 
+            // Invariant: No Argon, Claude, or GPT in model registries
+            for (const modelFile of ["models.yml", "models.allowed.yml"]) {
+              const content = fs.readFileSync(modelFile, "utf8");
+              const nonComments = content.split("\n").filter(l => !l.trim().startsWith("#")).join("\n");
+              if (/argon|claude|gpt|openai|anthropic/i.test(nonComments)) {
+                throw new Error("Forbidden model reference detected in " + modelFile);
+              }
+            }
+
             const syncManifest = JSON.parse(fs.readFileSync(".factory/template-sync.json", "utf8"));
             const requiredPaths = [
               ".factory/template-sync.json",
@@ -114,6 +126,13 @@ jobs:
       - name: Run Factory Python unit tests
         run: |
           python3 -m unittest discover tests
+
+      - name: Validate Factory Run Log (if runs.jsonl exists)
+        run: |
+          if [ -f .factory/runs/runs.jsonl ]; then
+            python3 scripts/run_log.py validate
+          fi
+
 
       - name: Run Node.js lint / test / build (if package.json exists)
         if: hashFiles('package.json') != ''
