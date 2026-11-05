@@ -77,6 +77,9 @@ What [`./scripts/init.sh`](scripts/init.sh) does (idempotent, safe to re-run at 
   - The score (1–10 + concise rationale) is placed in the PR body under `## How it was tested` (`- **PR Score**: <score>/10 — <short reason> (scorer: <model>)`) and written to `.factory/runs/runs.jsonl` under `pr_score`.
   - If the scorer model is unavailable, T3 stops and reports immediately in the thread final message. Zero fallback models, zero retries.
   - GitHub Actions on each PR run unit tests and validate the run log against its schema; workflows make zero model calls and use zero secrets.
+- **Changelog Maintenance Rule (`CHANGELOG.md`)**:
+  - The factory maintains [`CHANGELOG.md`](CHANGELOG.md) adhering to [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and Semantic Versioning standards.
+  - Upon landing major initiatives or architectural upgrades, agents record changes under `## [Unreleased]` or the dated release section, citing relevant PR numbers and issues for full provenance.
 
 ---
 
