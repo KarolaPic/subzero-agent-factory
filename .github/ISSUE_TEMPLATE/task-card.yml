@@ -1,0 +1,41 @@
+name: Task Card
+description: Propose an autonomous task with Goal, Done when, and Don't touch boundaries
+title: "feat: <short summary>"
+labels: ["agent", "feature"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ### Grok Bot Agent Factory — Task Card Ingestion
+        Every task card requires three mandatory sections: **Goal**, **Done when**, and **Don't touch**.
+        The autonomous agent verifies these boundaries before starting the plan.
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: What should happen when this task is complete?
+      placeholder: Describe the desired capability, outcome, or behavior change...
+    validations:
+      required: true
+  - type: textarea
+    id: done-when
+    attributes:
+      label: Done when
+      description: Specific, testable acceptance criteria as a markdown checkbox list.
+      placeholder: |
+        - [ ] Criterion 1...
+        - [ ] Criterion 2...
+        - [ ] All tests and `ci` check pass.
+    validations:
+      required: true
+  - type: textarea
+    id: dont-touch
+    attributes:
+      label: Don't touch
+      description: Explicit boundaries, non-goals, frozen interfaces, or invariants.
+      placeholder: |
+        - Invariants, frozen files, or non-goals...
+        - Zero paid API keys rule.
+        - No issue/PR comments rule.
+    validations:
+      required: true

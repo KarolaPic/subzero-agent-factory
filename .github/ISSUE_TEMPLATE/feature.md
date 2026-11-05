@@ -5,15 +5,17 @@ title: "feat: <short summary>"
 labels: ["feature"]
 ---
 
-## Problem / Context
-<!-- What problem does this solve from the user's perspective? -->
+## Goal
+<!-- What should happen when this feature is complete? Describe the desired capability, outcome, or behavior change. -->
 
-## Desired Outcome
-<!-- What should happen when this feature is complete? -->
-
-## Acceptance Criteria
+## Done when
+<!-- Specific, testable acceptance criteria as a markdown checkbox list. -->
 - [ ] ...
 - [ ] ...
+- [ ] All unit/integration tests and `ci` check pass.
 
-## Notes / Constraints (Optional)
-<!-- Relevant files, boundaries, or non-goals. Add the `agent` label when ready for the factory to pick up this issue. -->
+## Don't touch
+<!-- Explicit boundaries, non-goals, frozen interfaces, or invariants. Add the `agent` label when ready for the factory to pick up this issue. -->
+- ...
+- Zero paid API keys rule.
+- No issue/PR comments rule.

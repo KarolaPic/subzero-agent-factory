@@ -44,3 +44,24 @@ body:
       render: shell
     validations:
       required: false
+  - type: textarea
+    id: done-when
+    attributes:
+      label: Done when
+      description: Specific, testable criteria for defect resolution as a markdown checkbox list.
+      placeholder: |
+        - [ ] Root cause identified and isolated with failing regression test.
+        - [ ] Minimal fix implemented and all tests pass.
+        - [ ] `ci` check is green.
+    validations:
+      required: true
+  - type: textarea
+    id: dont-touch
+    attributes:
+      label: Don't touch
+      description: Explicit boundaries, non-goals, or invariants to preserve while fixing this defect.
+      placeholder: |
+        - Non-goals, frozen APIs, or unaffected modules...
+        - Zero paid API keys rule.
+    validations:
+      required: true
