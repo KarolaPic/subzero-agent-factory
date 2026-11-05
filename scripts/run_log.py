@@ -263,6 +263,9 @@ def main() -> None:
     rec_parser.add_argument("--score", "--pr-score", type=float, default=None, dest="pr_score", help="PR score (e.g. 1-10)")
     rec_parser.add_argument("--builder", default="gemini-3.8-flash-high", help="Builder model")
     rec_parser.add_argument("--auditor", default="grok-4.7", help="Auditor model")
+    rec_parser.add_argument("--review-result", choices=["approved", "changes_requested", "skipped"], default=None, help="Review outcome")
+    rec_parser.add_argument("--review-rounds", type=int, default=None, help="Review rounds (1-3)")
+    rec_parser.add_argument("--reviewer-model", default=None, help="Reviewer model")
     rec_parser.add_argument("--runs-dir", type=Path, default=None, help="Optional runs directory")
 
     # Subcommand: validate
@@ -286,6 +289,9 @@ def main() -> None:
                 builder=args.builder,
                 auditor=args.auditor,
                 pr_score=args.pr_score,
+                review_result=args.review_result,
+                review_rounds=args.review_rounds,
+                reviewer_model=args.reviewer_model,
                 runs_dir=args.runs_dir,
             )
             print(f"✓ Recorded run for issue #{issue_val} (result: {args.result}, score: {args.pr_score})")

@@ -147,13 +147,13 @@ Enforce root-cause engineering discipline directly in the fix:
      python3 scripts/review_pr.py --pr <PR_NUMBER> --issue <ISSUE_NUMBER>
      ```
    - Reviewer agent operates with `auditor` model from `models.yml` (differs from `builder`, Gemini with differing effort, zero Argon/Claude/GPT, no fallback).
-   - Reviewer reads the PR diff, bug task card, and test evidence, then submits a formal GitHub PR review (`APPROVE` or `REQUEST_CHANGES`) using the dedicated GitHub App / reviewer token.
+   - Reviewer reads the PR diff, bug task card, and test evidence, then records its evaluation (`APPROVE` or `REQUEST_CHANGES`) directly in the PR body under `## Reviewer Agent` and in the run log.
    - **Review Loop (Max 3 Rounds)**:
-     - If `REQUEST_CHANGES` is submitted, builder addresses findings in up to 3 review rounds.
+     - If `REQUEST_CHANGES` is evaluated, builder addresses findings in up to 3 review rounds.
      - If not approved after 3 rounds, execution **halts immediately** and reports blocker to César in the thread final message.
 4. **Three-Tier Risk Merge Policy (`scripts/classify_pr_risk.py`)**:
    - **`low-risk`**: Auto-merges upon green `ci` check.
-   - **`normal`**: Auto-merges upon green `ci` check **AND** formal reviewer agent approval (`review-pr`).
+   - **`normal`**: Auto-merges upon green `ci` check **AND** reviewer agent approval recorded in the PR body.
    - **`high-risk` / `needs-approval`**: **NEVER auto-merges autonomously**. Halts and reports "waiting for César" in the thread final message per ADR 0001.
 5. **Merge Command & Run Log Recording**:
    - Execute squash merge:
@@ -161,7 +161,7 @@ Enforce root-cause engineering discipline directly in the fix:
      gh pr merge <PR_NUMBER> --squash
      ```
    - **Strict Rule**: NEVER pass `--delete-branch`. Never delete branches.
-   - **No Bot Comments Invariant**: No bot comments on PRs or issues other than the formal PR review.
+   - **No Bot Comments Invariant**: No bot comments on PRs or issues.
    - **Run Log Recording**: Record the run outcome with the evaluated PR score into `.factory/runs/runs.jsonl`:
      ```bash
      python3 scripts/run_log.py record --issue <ISSUE_NUMBER> --pr <PR_NUMBER> --result merged --score <SCORE>

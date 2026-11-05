@@ -67,6 +67,9 @@ class TestRunLog(unittest.TestCase):
             "reviewer_model",
         }
         self.assertEqual(required, expected_fields)
+        desc = schema.get("properties", {}).get("review_result", {}).get("description", "")
+        self.assertNotIn("formal PR review", desc)
+        self.assertIn("reviewer agent evaluation", desc)
 
     def test_record_run_basic(self):
         record = record_run(

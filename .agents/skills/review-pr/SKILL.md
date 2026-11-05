@@ -1,11 +1,11 @@
 ---
 name: review-pr
-description: Autonomous reviewer agent skill that inspects PR diffs, task cards, and test evidence, then submits formal GitHub PR reviews (Approve or Request Changes) using a dedicated GitHub App / reviewer identity.
+description: Autonomous reviewer agent skill that inspects PR diffs, task cards, and test evidence, then records its evaluation (Approve or Request Changes) in the PR body and run log.
 ---
 
 # Reviewer Agent (`review-pr`)
 
-Autonomous code review skill designed for pull request verification and approval within the Grok Bot Agent Factory. It acts as the independent reviewer agent in the three-tier risk governance model, inspecting PR diffs, task card specifications, and test evidence before submitting a formal GitHub Pull Request Review (`APPROVE` or `REQUEST_CHANGES`).
+Autonomous code review skill designed for pull request verification and approval within the Grok Bot Agent Factory. It acts as the independent reviewer agent in the three-tier risk governance model, inspecting PR diffs, task card specifications, and test evidence before recording its evaluation (`APPROVE` or `REQUEST_CHANGES`) directly in the PR body under `## Reviewer Agent` and in `.factory/runs/runs.jsonl`.
 
 ---
 
@@ -30,15 +30,16 @@ PR Diff + Task Card (Goal, Done when, Don't touch) + Test Evidence
        └─ Risk tier validation (No unflagged high-risk paths)
                              │
                              ▼
-     [Phase 3: Formal Review Submission]
-       ├─ Submit formal GitHub PR Review via GitHub App / Bot token
-       ├─ If all criteria met ──► Event: APPROVE
-       └─ If issues found ──────► Event: REQUEST_CHANGES with concrete findings
+     [Phase 3: PR Body Verdict & Run Log Recording]
+       ├─ Update PR body under '## Reviewer Agent' via gh pr edit as cesarchavezcal
+       ├─ Record verdict in .factory/runs/runs.jsonl
+       ├─ If all criteria met ──► Verdict: APPROVE
+       └─ If issues found ──────► Verdict: REQUEST_CHANGES with concrete findings
                              │
                              ▼
      [Phase 4: Review Loop & Escalation Guard]
-       ├─ Track review rounds (Round 1 .. 3)
-       ├─ If approved ──────────► Auto-merge gate unblocked
+       ├─ Track review rounds (Round 1 .. 3) from PR body / run log
+       ├─ If approved ──────────► Auto-merge gate unblocked (gate = ci + Approve)
        └─ If round > 3 ─────────► HALT execution & report to César
 ```
 
@@ -81,32 +82,34 @@ The reviewer agent inspects three core artifacts for every PR:
 
 ---
 
-## Phase 3: Formal Review Submission Engine
+## Phase 3: PR Body Verdict & Run Log Recording
 
-The reviewer agent submits formal GitHub Pull Request Reviews using [`scripts/review_pr.py`](../../../scripts/review_pr.py):
+The reviewer agent records its verdict without requiring external GitHub App tokens or secondary bot identities:
 
-1. **Identity & Authentication**:
-   - Reviews are submitted under a dedicated **GitHub App** or bot account identity.
-   - Token precedence: `REVIEWER_GITHUB_TOKEN` -> `GITHUB_APP_TOKEN` -> `GH_TOKEN` -> `GITHUB_TOKEN`.
-2. **Review Action (`gh pr review`)**:
+1. **Identity & Single-Account Invariant**:
+   - All PR inspections and body updates run using `cesarchavezcal`.
+   - No secondary GitHub App or bot tokens are needed.
+2. **PR Body Update (`gh pr edit`)**:
+   - The reviewer appends or updates the `## Reviewer Agent` section in the PR body:
+     ```bash
+     gh pr edit <PR_NUMBER> --body "<Updated PR body with Reviewer Agent section>"
+     ```
    - **Approval**:
-     ```bash
-     gh pr review <PR_NUMBER> --approve --body "<Approval summary detailing verified criteria>"
-     ```
+     Includes `- **Verdict**: APPROVE`, round number, and confirmation of verified criteria.
    - **Request Changes**:
-     ```bash
-     gh pr review <PR_NUMBER> --request-changes --body "<Numbered list of concrete, actionable findings>"
-     ```
-3. **Communication Invariant (Zero Bot Comments)**:
-   - **Strict Rule**: No bot comments on issues or PRs other than the **formal GitHub PR review**.
-   - Never post standalone PR discussion comments or issue comments. All feedback must be submitted through the official GitHub Review event (`APPROVE` or `REQUEST_CHANGES`).
+     Includes `- **Verdict**: REQUEST_CHANGES`, round number, and a numbered list of concrete findings.
+3. **Run Log Entry**:
+   - The run record is saved with `review_result`, `review_rounds`, and `reviewer_model`.
+4. **Communication Invariant (Zero Bot Comments)**:
+   - **Strict Rule**: No bot comments on issues or PRs.
+   - Never post standalone PR discussion comments or issue comments.
 
 ---
 
 ## Phase 4: Review Loop Enforcement (Max 3 Rounds)
 
 1. **Round Tracking**:
-   - Review rounds are tracked incrementally per PR (Round 1, Round 2, Round 3).
+   - Review rounds are counted from the PR body or run log (Round 1, Round 2, Round 3).
    - If changes are requested, the builder agent performs rework and opens a new review round.
 2. **Max 3 Rounds Escalation**:
    - A maximum of **3 review rounds** is strictly enforced.

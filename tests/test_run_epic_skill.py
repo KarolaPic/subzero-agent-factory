@@ -110,7 +110,6 @@ class TestRunEpicSkill(unittest.TestCase):
         self.assertIn("Idempotency", content)
         self.assertIn("cesarchavezcal", content)
 
-
     def test_review_pr_integration_in_run_epic(self):
         with open(self.skill_path, "r", encoding="utf-8") as f:
             content = f.read()

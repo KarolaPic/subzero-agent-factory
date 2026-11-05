@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
-"""Reviewer agent engine for PR inspection, spec verification, and formal review submission.
+"""Reviewer agent engine for PR inspection, spec verification, and PR body verdict recording.
 
-Part of Grok Bot Agent Factory (#56 / #69).
+Part of Grok Bot Agent Factory (#56 / #69 / #83).
 Enforces:
 1. Model configuration: Reads auditor model from models.yml; enforces auditor != builder,
    Gemini preference with differing effort, zero Argon/Claude/GPT, no fallback model.
 2. Artifact inspection: Reads PR diff, issue task card (Goal / Done when / Don't touch),
    and test evidence.
-3. Formal GitHub PR review: Submits APPROVE or REQUEST_CHANGES with concrete findings
-   using a dedicated GitHub App / bot reviewer token.
+3. Reviewer Agent Verdict: Records APPROVE or REQUEST_CHANGES with concrete findings
+   directly in the PR body under ## Reviewer Agent and logs to .factory/runs/runs.jsonl.
 4. Review loop guard: Enforces max 3 review rounds; if still unapproved after 3 rounds,
    halts and signals for human escalation (César).
-5. Zero bot comments invariant: Only formal GitHub reviews (event APPROVE or REQUEST_CHANGES),
-   never standalone PR or issue discussion comments.
+5. Zero bot comments invariant: No standalone PR or issue discussion comments; verdict lives
+   cleanly in the PR body and run log under cesarchavezcal.
 """
 
 import argparse
@@ -274,8 +274,11 @@ def evaluate_review(
             findings.append("Violates 'Don't touch': models.yml was modified.")
         # Check for branch deletion
         if "never delete branch" in constraint_lower or "delete-branch" in constraint_lower:
-            if "--delete-branch" in diff_text:
-                findings.append("Violates 'Don't touch': diff contains '--delete-branch' directive.")
+            for diff_line in diff_text.splitlines():
+                if diff_line.startswith("+") and not diff_line.startswith("+++"):
+                    if re.search(r"gh\s+pr\s+merge\b.*--delete-branch", diff_line):
+                        findings.append("Violates 'Don't touch': diff contains 'gh pr merge --delete-branch' invocation.")
+                        break
         # Check for bot comments
         if "no bot comments" in constraint_lower:
             if "issue comment" in diff_text.lower() and "scripts/" in diff_text:
@@ -346,114 +349,151 @@ def evaluate_review(
     }
 
 
-def submit_formal_review(
+def fetch_pr_body(pr_number: int) -> str:
+    """Fetch pull request body using gh CLI."""
+    cmd = ["gh", "pr", "view", str(pr_number), "--json", "body", "--jq", ".body"]
+    result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+    return result.stdout
+
+
+def update_pr_body_with_verdict(existing_body: str, review_summary: str) -> str:
+    """Insert or replace the '## Reviewer Agent' section in the PR body."""
+    pattern = r"(?s)(^|\n)##\s*Reviewer Agent.*?(?=(\n##\s|\Z))"
+    clean_summary = review_summary.strip()
+    if re.search(pattern, existing_body):
+        new_body = re.sub(pattern, f"\n{clean_summary}\n", existing_body, count=1)
+        return new_body.strip() + "\n"
+    else:
+        existing_trimmed = existing_body.rstrip()
+        if existing_trimmed:
+            return f"{existing_trimmed}\n\n{clean_summary}\n"
+        return f"{clean_summary}\n"
+
+
+def record_pr_review_in_body(
     pr_number: int,
     verdict: str,
     body: str,
-    token: Optional[str] = None,
     dry_run: bool = False,
 ) -> Dict[str, Any]:
-    """Submit formal GitHub Pull Request Review via gh CLI or GitHub REST API.
+    """Record reviewer agent verdict and summary directly in the PR body via gh pr edit.
 
-    Uses dedicated reviewer token / GitHub App token if provided.
-    Adheres strictly to the invariant: zero bot comments on PRs/issues other
-    than the formal PR review itself.
+    Adheres strictly to single-account execution under cesarchavezcal and the
+    zero bot comments / no GitHub App token invariant.
     """
     if dry_run:
         return {
             "pr": pr_number,
             "verdict": verdict,
             "body": body,
-            "submitted": False,
+            "recorded": False,
             "dry_run": True,
         }
 
-    # Resolve token precedence:
-    # 1. Explicit token argument
-    # 2. REVIEWER_GITHUB_TOKEN
-    # 3. GITHUB_APP_TOKEN
-    # 4. GH_TOKEN
-    # 5. GITHUB_TOKEN
-    auth_token = (
-        token
-        or os.environ.get("REVIEWER_GITHUB_TOKEN")
-        or os.environ.get("GITHUB_APP_TOKEN")
-        or os.environ.get("GH_TOKEN")
-        or os.environ.get("GITHUB_TOKEN")
-    )
+    try:
+        existing_body = fetch_pr_body(pr_number)
+    except Exception as exc:
+        raise ReviewerError(f"Failed to fetch PR #{pr_number} body: {exc}") from exc
 
-    env = os.environ.copy()
-    if auth_token:
-        env["GH_TOKEN"] = auth_token
-        env["GITHUB_TOKEN"] = auth_token
-
-    # Event mapping for GitHub Review API: 'APPROVE' or 'REQUEST_CHANGES'
-    event_arg = "--approve" if verdict == "APPROVE" else "--request-changes"
+    updated_body = update_pr_body_with_verdict(existing_body, body)
 
     cmd = [
         "gh",
         "pr",
-        "review",
+        "edit",
         str(pr_number),
-        event_arg,
         "--body",
-        body,
+        updated_body,
     ]
-
-    result = subprocess.run(cmd, env=env, capture_output=True, text=True)
+    result = subprocess.run(cmd, capture_output=True, text=True)
     if result.returncode != 0:
         raise ReviewerError(
-            f"Failed to submit formal review on PR #{pr_number}: {result.stderr.strip()}"
+            f"Failed to update PR #{pr_number} body with reviewer verdict: {result.stderr.strip()}"
         )
 
     return {
         "pr": pr_number,
         "verdict": verdict,
         "body": body,
-        "submitted": True,
+        "recorded": True,
         "dry_run": False,
     }
 
 
-def count_existing_reviews(pr_number: int, token: Optional[str] = None) -> int:
-    """Count existing formal reviews submitted for this PR to determine current round."""
-    env = os.environ.copy()
-    if token:
-        env["GH_TOKEN"] = token
-        env["GITHUB_TOKEN"] = token
-
-    cmd = [
-        "gh",
-        "api",
-        f"repos/:owner/:repo/pulls/{pr_number}/reviews",
-        "--jq",
-        "length",
-    ]
-    try:
-        result = subprocess.run(cmd, env=env, capture_output=True, text=True, check=True)
-        count = int(result.stdout.strip())
-        return max(1, count + 1)
-    except Exception:
-        return 1
+def submit_formal_review(
+    pr_number: int,
+    verdict: str,
+    body: str,
+    dry_run: bool = False,
+    **kwargs: Any,
+) -> Dict[str, Any]:
+    """Compatibility alias for record_pr_review_in_body."""
+    res = record_pr_review_in_body(pr_number=pr_number, verdict=verdict, body=body, dry_run=dry_run)
+    res["submitted"] = res.get("recorded", False)
+    return res
 
 
-def fetch_pr_diff(pr_number: int, token: Optional[str] = None) -> str:
+def count_existing_reviews(
+    pr_number: Optional[int] = None,
+    pr_body: Optional[str] = None,
+    repo_root: Optional[Path] = None,
+) -> int:
+    """Count existing review rounds from PR body or run log (.factory/runs/runs.jsonl).
+
+    Does NOT call GitHub /pulls/N/reviews API.
+    """
+    body_text = pr_body
+    if body_text is None and pr_number is not None:
+        try:
+            body_text = fetch_pr_body(pr_number)
+        except Exception:
+            body_text = None
+
+    if body_text:
+        match = re.search(r"##\s*Reviewer Agent:[^\n]*?(?:Round\s*(\d+)|round\s*(\d+))", body_text, re.IGNORECASE)
+        if match:
+            round_str = match.group(1) or match.group(2)
+            if round_str:
+                return max(1, int(round_str) + 1)
+
+    if repo_root is None:
+        repo_root = Path(__file__).resolve().parent.parent
+    runs_file = repo_root / ".factory" / "runs" / "runs.jsonl"
+    if runs_file.is_file():
+        try:
+            max_log_round = 0
+            with open(runs_file, "r", encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        record = json.loads(line)
+                        if pr_number is not None and (record.get("pr") == pr_number or str(record.get("pr")) == str(pr_number)):
+                            r = record.get("review_rounds")
+                            if isinstance(r, int) and r > max_log_round:
+                                max_log_round = r
+                    except Exception:
+                        continue
+            if max_log_round > 0:
+                return max(1, max_log_round + 1)
+        except Exception:
+            pass
+
+    return 1
+
+
+def fetch_pr_diff(pr_number: int) -> str:
     """Fetch diff for a pull request using gh CLI."""
-    env = os.environ.copy()
-    if token:
-        env["GH_TOKEN"] = token
     cmd = ["gh", "pr", "diff", str(pr_number)]
-    result = subprocess.run(cmd, env=env, capture_output=True, text=True, check=True)
+    result = subprocess.run(cmd, capture_output=True, text=True, check=True)
     return result.stdout
 
 
-def fetch_issue_body(issue_number: int, token: Optional[str] = None) -> str:
+def fetch_issue_body(issue_number: int) -> str:
     """Fetch issue body using gh CLI."""
-    env = os.environ.copy()
-    if token:
-        env["GH_TOKEN"] = token
     cmd = ["gh", "issue", "view", str(issue_number), "--json", "body", "--jq", ".body"]
-    result = subprocess.run(cmd, env=env, capture_output=True, text=True, check=True)
+    result = subprocess.run(cmd, capture_output=True, text=True, check=True)
     return result.stdout
 
 
@@ -468,7 +508,8 @@ def main() -> int:
     parser.add_argument("--test-evidence", type=str, help="Path to test output or evidence file")
     parser.add_argument("--round", type=int, default=None, help="Current review round number")
     parser.add_argument("--max-rounds", type=int, default=3, help="Maximum allowed review rounds")
-    parser.add_argument("--token", type=str, default=None, help="Dedicated GitHub App / reviewer token")
+    parser.add_argument("--record-run", action="store_true", help="Record review outcome in .factory/runs/runs.jsonl")
+    parser.add_argument("--token", type=str, default=None, help=argparse.SUPPRESS)
     parser.add_argument("--dry-run", action="store_true", help="Evaluate without submitting review to GitHub")
     parser.add_argument("--json", action="store_true", help="Output results in JSON format")
 
@@ -494,7 +535,7 @@ def main() -> int:
             diff_text = diff_path.read_text(encoding="utf-8")
     elif args.pr:
         try:
-            diff_text = fetch_pr_diff(args.pr, args.token)
+            diff_text = fetch_pr_diff(args.pr)
         except Exception as exc:
             print(f"Error fetching diff for PR #{args.pr}: {exc}", file=sys.stderr)
             return 1
@@ -512,7 +553,7 @@ def main() -> int:
         task_card_text = tc_path.read_text(encoding="utf-8")
     elif args.issue:
         try:
-            task_card_text = fetch_issue_body(args.issue, args.token)
+            task_card_text = fetch_issue_body(args.issue)
         except Exception as exc:
             print(f"Error fetching issue #{args.issue}: {exc}", file=sys.stderr)
             return 1
@@ -538,14 +579,22 @@ def main() -> int:
             test_evidence_text = te_path.read_text(encoding="utf-8")
         else:
             test_evidence_text = args.test_evidence
-    elif args.dry_run:
+    elif args.pr:
+        try:
+            body = fetch_pr_body(args.pr)
+            match = re.search(r"##\s*(?:How it was tested|Verification)\s*\n(.*?)(?=\n##|\Z)", body, re.DOTALL | re.IGNORECASE)
+            if match and match.group(1).strip():
+                test_evidence_text = match.group(1).strip()
+        except Exception:
+            pass
+    if not test_evidence_text and args.dry_run:
         test_evidence_text = "Ran 90 tests in 10s\nOK\nexitCode === 0"
 
     # 5. Determine round number
     if args.round is not None:
         round_num = args.round
     elif args.pr:
-        round_num = count_existing_reviews(args.pr, args.token)
+        round_num = count_existing_reviews(pr_number=args.pr)
     else:
         round_num = 1
 
@@ -558,20 +607,40 @@ def main() -> int:
         max_rounds=args.max_rounds,
     )
 
-    # 7. Submit formal review if target PR is specified
+    # 7. Record review verdict in PR body if target PR is specified
     submission_res = {}
     if args.pr:
         try:
-            submission_res = submit_formal_review(
+            submission_res = record_pr_review_in_body(
                 pr_number=args.pr,
                 verdict=review_eval["verdict"],
                 body=review_eval["summary"],
-                token=args.token,
                 dry_run=args.dry_run,
             )
         except ReviewerError as exc:
             print(f"Error: {exc}", file=sys.stderr)
             return 1
+
+    # Optional run log recording
+    if args.record_run and args.issue and args.pr and not args.dry_run:
+        try:
+            try:
+                from scripts.run_log import record_run
+            except ImportError:
+                from run_log import record_run  # type: ignore
+            rev_map = {"APPROVE": "approved", "REQUEST_CHANGES": "changes_requested"}
+            record_run(
+                issue=args.issue,
+                pr=args.pr,
+                result="merged" if review_eval["verdict"] == "APPROVE" else "blocked",
+                builder=models["builder"],
+                auditor=models["auditor"],
+                review_result=rev_map.get(review_eval["verdict"]),
+                review_rounds=review_eval["round"],
+                reviewer_model=models["auditor"],
+            )
+        except Exception as exc:
+            print(f"Warning: Failed to update run log: {exc}", file=sys.stderr)
 
     # 8. Output results
     output_data = {
@@ -587,7 +656,8 @@ def main() -> int:
         },
         "findings": review_eval["findings"],
         "summary": review_eval["summary"],
-        "submitted": submission_res.get("submitted", False),
+        "recorded": submission_res.get("recorded", False),
+        "submitted": submission_res.get("recorded", False),
         "dry_run": args.dry_run,
     }
 
@@ -607,7 +677,7 @@ def main() -> int:
             print("Status: Passed all criteria.")
 
         if args.pr:
-            status_str = "Dry-run (not submitted)" if args.dry_run else "Submitted formal review"
+            status_str = "Dry-run (not recorded)" if args.dry_run else "Recorded in PR body"
             print(f"GitHub Action: {status_str} on PR #{args.pr}")
 
     # Return code:
