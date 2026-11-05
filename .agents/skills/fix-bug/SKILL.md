@@ -133,8 +133,9 @@ Enforce root-cause engineering discipline directly in the fix:
    - Run `gh auth status` first before any push or `gh` command. If the active account is not `cesarchavezcal`, remember the previous active account, switch using `gh auth switch --user cesarchavezcal`, and switch back to the earlier account when done.
    - Maintain the git email `cesarchavezcal@gmail.com` via `includeIf`, and never change the global git email.
 2. **Branch & PR**:
-   - Create branch: `fix/<issue-number>-<short-description>`.
-   - Commit as `cesarchavezcal` (`cesarchavezcal@gmail.com`).
+   - Create branch conforming to Conventional Branch ([`conventionalbranch.org`](https://conventionalbranch.org/)): `fix/<issue-number>-<slug>`.
+   - Commit changes conforming to Conventional Commits ([`conventionalcommits.org`](https://www.conventionalcommits.org/)): `fix(<scope>): <summary> (#<issue>)` as `cesarchavezcal` (`cesarchavezcal@gmail.com`).
+   - Open a PR targeting `main` with title conforming to Conventional Commits.
    - **T3 PR Scoring Rule (`scripts/score_pr.py`)**:
      - T3 scores each opened PR diff using the configured `scorer` model from `models.yml` (default `gemini-3.8-flash-low`, signed-in model session, zero paid API keys).
      - If the scorer model is unavailable, stop immediately and report in thread final message with zero fallback or retries.

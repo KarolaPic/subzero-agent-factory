@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Adopted [Conventional Branch](https://conventionalbranch.org/) specification (`scripts/validate_conventions.py`), establishing `<type>/<issue>-<description>` branch naming alongside Conventional Commits and standardized PR titles ([#94](https://github.com/cesarchavezcal/grok-bot-agent-factory/issues/94)).
+- Added test suite `tests/test_conventional_branch.py` verifying branch prefixes, character rules, commit formatting, and PR titles.
+- Enforced branch and PR title validation in `.github/workflows/ci.yml`.
 - Free text request intake for `$run-epic` (`scripts/find_or_create_issue.py`), enabling execution from natural language prompts with automated matching, task card generation, and duplicate prevention via hidden idempotency markers ([#89](https://github.com/cesarchavezcal/grok-bot-agent-factory/issues/89)).
 - Unit test suite `tests/test_find_or_create_issue.py` verifying matching precedence, unclear request rejection, task card validation, and duplicate avoidance.
 - Updated `.agents/skills/run-epic/SKILL.md`, `AGENTS.md`, and `docs/setup.md` with documented dry-run walkthroughs and intake rules.

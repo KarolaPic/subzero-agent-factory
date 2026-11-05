@@ -105,9 +105,9 @@ High-level orchestrator skill designed for autonomous feature tickets and issue-
    - Run `gh auth status` first before any push or `gh` command. If the active account is not `cesarchavezcal`, remember the previous active account, switch using `gh auth switch --user cesarchavezcal`, and switch back to the earlier account when done.
    - Maintain the git email `cesarchavezcal@gmail.com` via `includeIf`, and never change the global git email.
 2. **Branch & PR**:
-   - Create a feature branch off `main`: `feat/<work-item-id>`.
-   - Commit changes as `cesarchavezcal` (`cesarchavezcal@gmail.com`).
-   - Open a PR targeting `main`.
+   - Create a branch off `main` conforming to Conventional Branch ([`conventionalbranch.org`](https://conventionalbranch.org/)): `feat/<issue-number>-<slug>` (or `chore/`, `docs/`, `refactor/` as appropriate).
+   - Commit changes following Conventional Commits ([`conventionalcommits.org`](https://www.conventionalcommits.org/)): `<type>(<scope>): <summary> (#<issue>)` as `cesarchavezcal` (`cesarchavezcal@gmail.com`).
+   - Open a PR targeting `main` with title conforming to Conventional Commits.
    - **T3 PR Scoring Rule (`scripts/score_pr.py`)**:
      - T3 scores each opened PR diff using the configured `scorer` model from `models.yml` (default `gemini-3.8-flash-low`, signed-in model session, zero paid API keys).
      - If the scorer model is unavailable, stop immediately and report in thread final message with zero fallback or retries.
