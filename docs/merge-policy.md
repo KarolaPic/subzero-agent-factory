@@ -66,22 +66,40 @@ If a pull request is classified as **`high-risk`**, autonomous auto-merge is str
 
 ## 4. GitHub Ruleset & Branch Protection Configuration
 
-To enforce this policy at the repository level:
+To enforce this policy at the repository level on `main`:
 
-### Required Settings on `main`
+### Required Ruleset / Branch Protection Settings on `main`
 
-1. **Branch Protection / Ruleset Target**: `main`
+1. **Target Branch**: `main` (fnmatch: `main`)
 2. **Require a pull request before merging**:
-   - Required approvals: **1 approval** (from `cesarchavezcal` or designated CODEOWNERS).
-   - Dismiss stale pull request approvals when new commits are pushed.
-   - Require review from Code Owners.
+   - **Required approvals**: Exactly **1 approving review** (submitted by the dedicated Reviewer Agent GitHub App or `cesarchavezcal`).
+   - **Dismiss stale pull request approvals when new commits are pushed**: Enabled.
+   - **Require review from Code Owners**: Optional / Enabled if CODEOWNERS defined.
+   - **Require approval of the most recent reviewable push**: Enabled.
 3. **Require status checks to pass before merging**:
-   - Require branches to be up to date before merging (`strict: true`).
-   - Required status check: **`ci`**.
+   - **Require branches to be up to date before merging** (`strict: true`).
+   - **Required status check**: Exactly **`ci`** (defined in `.github/workflows/ci.yml`).
 4. **Require linear history**: Enabled.
 5. **Merge method**: Allow squash merging only; disable merge commits and rebase merging.
-6. **Branch preservation**: Automatically delete head branches must remain **DISABLED**.
+6. **Branch preservation**: Automatically delete head branches must remain **DISABLED** (`delete_branch_on_merge=false`).
 7. **Force pushes and deletions**: Disallowed (`allow_force_pushes=false`, `allow_deletions=false`).
+
+### GitHub App Permissions & Reviewer Identity
+
+The autonomous reviewer agent operates under a dedicated GitHub App / bot identity with minimal necessary permissions:
+
+| Permission | Access | Purpose |
+| :--- | :--- | :--- |
+| **Pull requests** | **Read and write** (`pull_requests: write`) | Submit formal PR reviews (`APPROVE`, `REQUEST_CHANGES`) |
+| **Contents** | **Read-only** (`contents: read`) | Read PR diffs, tree structure, and repository files |
+| **Checks** | **Read-only** (`checks: read`) | Verify CI check suite runs and completion status |
+| **Issues** | **Read-only** (`issues: read`) | Read issue task cards (Goal, Done when, Don't touch) |
+
+### Secret Configuration
+
+Configure the reviewer authentication secret in repository settings:
+- **`REVIEWER_GITHUB_TOKEN`**: Dedicated GitHub App installation access token or bot account token configured via `gh secret set REVIEWER_GITHUB_TOKEN`.
+- Fallbacks supported by `scripts/review_pr.py`: `GITHUB_APP_TOKEN` -> `GH_TOKEN` -> `GITHUB_TOKEN`.
 
 ### Manual Administration Note
 
@@ -91,7 +109,25 @@ To enforce this policy at the repository level:
 
 ---
 
-## 5. Invariants (Don't Touch)
+## 5. End-to-End Reviewer Flow Verification Checklist
+
+Verify the entire automated review and merge pipeline before live production use:
+
+- [ ] **Model Resolution**: `models.yml` specifies `auditor: <model>` distinct from `builder: <model>` (Gemini at differing effort, zero Argon/Claude/GPT, no fallback).
+- [ ] **GitHub App Identity**: Reviewer App installed on repository with `pull_requests: write`, `contents: read`, `checks: read`.
+- [ ] **Reviewer Secret**: `REVIEWER_GITHUB_TOKEN` secret present in GitHub Actions secrets.
+- [ ] **Branch Protection on `main`**: Requires 1 approving review + `ci` required status check; linear history enabled; branch deletion disabled.
+- [ ] **Three-Tier Risk Triage**:
+  - `low-risk` PRs: Auto-merge upon green `ci` check.
+  - `normal` PRs: Auto-merge upon green `ci` check + formal reviewer agent approval (`APPROVE`).
+  - `high-risk` PRs: Auto-merge halted; stops and reports "waiting for César" in thread final message.
+- [ ] **Review Loop Guard**: Enforces max 3 review rounds. If unapproved after 3 rounds, halts for César.
+- [ ] **Zero Bot Comments**: No bot comments posted on PRs or issues other than the formal GitHub review event.
+- [ ] **Branch Preservation**: All PR merges use `gh pr merge --squash` without `--delete-branch`.
+
+---
+
+## 6. Invariants (Don't Touch)
 
 - The required check name is strictly **`ci`**.
 - All merges are **squash merges**.
