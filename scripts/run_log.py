@@ -96,6 +96,9 @@ def validate_run_record(record: Dict[str, Any]) -> None:
         "builder",
         "auditor",
         "pr_score",
+        "review_result",
+        "review_rounds",
+        "reviewer_model",
     }
 
     # Strict check: reject unexpected extra fields to avoid secret leakage
@@ -155,6 +158,30 @@ def validate_run_record(record: Dict[str, Any]) -> None:
         if not isinstance(score, (int, float)) or isinstance(score, bool) or score < 0:
             raise RunLogError(f"Field 'pr_score' must be number >= 0 or null, got {score!r}")
 
+    # 8. review_result: enum ["approved", "changes_requested", "skipped"] or None
+    rev_res = record["review_result"]
+    if rev_res is not None:
+        if rev_res not in ("approved", "changes_requested", "skipped"):
+            raise RunLogError(
+                f"Field 'review_result' must be one of ['approved', 'changes_requested', 'skipped'] or null, got {rev_res!r}"
+            )
+
+    # 9. review_rounds: integer 1..3 (or 0/None if unreviewed or skipped)
+    rounds = record["review_rounds"]
+    if rounds is not None:
+        if not isinstance(rounds, int) or isinstance(rounds, bool) or rounds < 0 or rounds > 3:
+            raise RunLogError(f"Field 'review_rounds' must be an integer between 0 and 3 or null, got {rounds!r}")
+        if rev_res in ("approved", "changes_requested") and rounds < 1:
+            raise RunLogError(
+                f"Field 'review_rounds' must be between 1 and 3 when review_result is '{rev_res}', got {rounds!r}"
+            )
+
+    # 10. reviewer_model: non-empty string or None
+    rev_model = record["reviewer_model"]
+    if rev_model is not None:
+        if not isinstance(rev_model, str) or not rev_model.strip():
+            raise RunLogError(f"Field 'reviewer_model' must be a non-empty string or null, got {rev_model!r}")
+
 
 def record_run(
     *,
@@ -169,6 +196,9 @@ def record_run(
     merged_at: Optional[str] = None,
     human_intervened: Any = False,
     pr_score: Optional[float] = None,
+    review_result: Optional[str] = None,
+    review_rounds: Optional[int] = None,
+    reviewer_model: Optional[str] = None,
     runs_dir: Optional[Path] = None,
 ) -> Dict[str, Any]:
     """Atomically appends a validated run log record to .factory/runs/runs.jsonl."""
@@ -188,6 +218,9 @@ def record_run(
         "builder": builder,
         "auditor": auditor,
         "pr_score": pr_score,
+        "review_result": review_result,
+        "review_rounds": review_rounds,
+        "reviewer_model": reviewer_model,
     }
 
     validate_run_record(record)

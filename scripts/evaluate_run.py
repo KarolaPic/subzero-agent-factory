@@ -90,6 +90,9 @@ def record_run_outcome(
         builder=builder_model,
         auditor=auditor_model,
         pr_score=pr_score if pr_score is not None else wi.get("prScore"),
+        review_result=wi.get("reviewResult") or wi.get("review_result"),
+        review_rounds=wi.get("reviewRounds") or wi.get("review_rounds"),
+        reviewer_model=wi.get("reviewerModel") or wi.get("reviewer_model"),
         runs_dir=target_runs_dir,
     )
 
