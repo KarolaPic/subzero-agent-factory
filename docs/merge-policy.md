@@ -6,33 +6,45 @@ This document specifies the merge policy and risk governance model for the **Gro
 
 ## 1. Core Principle
 
-**Only low-risk pull requests may autonomously auto-merge.**  
-Everything else requires human review and explicit approval from **César** (`cesarchavezcal`).
+**PRs auto-merge only when verified and approved within authorized risk boundaries.**
+- **`low-risk`**: Auto-merges upon green CI and independent audit/verification.
+- **`normal`**: Routes to the autonomous reviewer agent (`review-pr`); auto-merges upon green CI and formal reviewer approval.
+- **`high-risk`**: Strictly halts autonomous merge and requires human review and sign-off from **César** (`cesarchavezcal`).
 
 ---
 
-## 2. Risk Classification Rules
+## 2. Three-Tier Risk Classification Model
 
 Risk classification is determined automatically from the pull request diff (changed paths, additions, and deletions) by `scripts/classify_pr_risk.py` and enforced in CI (`.github/workflows/ci.yml`).
 
-### Low-Risk Criteria (`low-risk`)
+### A. Low-Risk Criteria (`low-risk`)
 
-A pull request is classified as **`low-risk`** if and only if it meets one of the following conditions:
+A pull request is classified as **`low-risk`** if and only if it meets one of the following conditions with zero high-risk paths:
 
-1. **Documentation-only**: All changed files are documentation (e.g. `*.md`, `docs/*`, `*.txt`, `*.rst`), provided no protected/control plane paths are modified.
-2. **Tests-only**: All changed files are test files (e.g. `tests/*`, `*_test.py`, `*.test.ts`), provided no protected/control plane paths are modified.
-3. **Small Code Fix**: A small fix under **50 changed lines** (total additions + deletions < 50) that touches **zero** protected or high-risk paths.
+1. **Documentation-only**: All changed files are documentation (e.g. `*.md`, `docs/*`, `*.txt`, `*.rst`).
+2. **Tests-only**: All changed files are test files (e.g. `tests/*`, `*_test.py`, `*.test.ts`).
+3. **Small Code Fix**: A small fix under **50 changed lines** (total additions + deletions < 50) that touches **zero** high-risk paths.
 
-### High-Risk / Needs-Approval Criteria (`needs-approval`)
+### B. Normal Risk Criteria (`normal`)
 
-A pull request is classified as **`needs-approval`** if any of the following are true:
+A pull request is classified as **`normal`** if:
+- It contains standard code changes where total changed lines (additions + deletions) $\ge 50$.
+- It touches **zero** high-risk or protected paths.
+- It routes to the autonomous **reviewer agent** (`review-pr`) for independent review and formal approval.
 
-- **Workflows**: Modifies any GitHub Action workflow (`.github/workflows/*`).
-- **Models**: Modifies model routing or permitted model registries (`models.yml`, `models.allowed.yml`).
-- **Dependencies**: Modifies any package manifest or lockfile (`package.json`, `package-lock.json`, `pnpm-lock.yaml`, `yarn.lock`, `requirements.txt`, `pyproject.toml`, `go.mod`, `Cargo.toml`, etc.).
-- **Factory Architecture**: Modifies core factory configuration or schemas (`.factory/*`).
-- **Control Plane & Self-Evolution (ADR 0001)**: Modifies `AGENTS.md` or any agent prompt/skill (`.agents/skills/*`). Per [ADR 0001](adr/0001-hitl-delivery-gate-for-skill-evolution.md), self-evolution strictly requires human sign-off.
-- **Large Diffs**: Any code change where total changed lines (additions + deletions) $\ge 50$.
+### C. High-Risk Criteria (`high-risk` / `needs-approval`)
+
+A pull request is classified as **`high-risk`** if it touches any protected infrastructure or high-risk domain:
+
+1. **Auth & Secrets**: Modifies credentials, tokens, or environment configs (`.env*`, `auth/*`, `secrets/*`, credential management).
+2. **Workflows**: Modifies any GitHub Action workflow (`.github/workflows/*`).
+3. **Branch Rules & Rulesets**: Modifies rulesets or branch protection (`.github/rulesets/*`, ruleset definitions).
+4. **Dependencies**: Modifies any package manifest or lockfile (`package.json`, `package-lock.json`, `pnpm-lock.yaml`, `yarn.lock`, `requirements.txt`, `pyproject.toml`, `go.mod`, `Cargo.toml`, etc.).
+5. **Models**: Modifies model routing or permitted model registries (`models.yml`, `models.allowed.yml`).
+6. **Migrations & Deletions**: Modifies database schemas, migrations (`migrations/*`, `*.sql`), or destructive deletions.
+7. **Deploy**: Modifies deployment scripts or container configs (`deploy/*`, `Dockerfile`, `docker-compose.*`).
+8. **Factory Architecture**: Modifies core factory configuration or schemas (`.factory/*`).
+9. **Control Plane & Self-Evolution (ADR 0001)**: Modifies `AGENTS.md` or any agent prompt/skill (`.agents/skills/*`). Per [ADR 0001](adr/0001-hitl-delivery-gate-for-skill-evolution.md), self-evolution strictly requires human sign-off.
 
 ---
 
@@ -40,12 +52,13 @@ A pull request is classified as **`needs-approval`** if any of the following are
 
 For a pull request to auto-merge autonomously:
 
-1. **Risk Classification**: The PR must be classified as **`low-risk`** (labeled `low-risk`).
-2. **Required Status Check**: The **`ci`** required check must pass on the current head commit rebased onto `main`.
-3. **Independent Interrogation**: The independent Grok 4.7 audit pass must yield a `PASS` verdict.
-4. **Merge Method**: Squash merge ONLY (`gh pr merge <PR_NUMBER> --squash`). Branches are never deleted (`delete_branch_on_merge=false`).
+1. **Required Status Check**: The **`ci`** required check must pass on the current head commit rebased onto `main`.
+2. **Review & Approval Gate**:
+   - **`low-risk`**: Passing independent audit (or reviewer approval).
+   - **`normal`**: Formal **approval** submitted by the reviewer agent (`review-pr`).
+3. **Merge Method**: Squash merge ONLY (`gh pr merge <PR_NUMBER> --squash`). Branches are never deleted (`delete_branch_on_merge=false`).
 
-If a pull request is classified as **`needs-approval`**, autonomous auto-merge is strictly halted:
+If a pull request is classified as **`high-risk`**, autonomous auto-merge is strictly halted:
 - The agent reports **`waiting for César`** in the thread final message.
 - The PR remains open awaiting manual review and merge by César.
 

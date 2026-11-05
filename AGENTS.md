@@ -139,10 +139,11 @@ Execution follows the official pstack [`poteto-mode`](.agents/skills/poteto-mode
      - `## How it was tested`: Combined runtime verification proof (e.g. `verify-app` or test suite command with `exitCode: 0`) and independent Grok audit verdict (`verdict: PASS`), alongside a short line stating models used (`builder: <model>`, `auditor: <model>`) dynamically read from `models.yml` (never an obsolete static table).
      - `Closes #N`: Mandatory issue closing directive (never `Refs #N`). For the designated final deploy sub-issue of an epic, also include `Closes #<EPIC_NUMBER>`.
 5. **Merge Policy & Risk Classification Gate (`docs/merge-policy.md`)**:
-   - **Low-Risk Auto-Merge Rule**: Only PRs classified as **`low-risk`** may autonomously auto-merge upon green `ci` and passing Grok audit.
-     - *Low-risk criteria*: Docs only, tests only, or a small code fix under 50 changed lines touching zero protected paths.
-   - **Needs-Approval Human Gate**: Any PR that touches workflows (`.github/workflows/*`), models (`models*.yml`), dependencies, factory config (`.factory/*`), skill evolution / control plane files (`.agents/skills/*`, `AGENTS.md` per ADR 0001), or has $\ge 50$ changed lines is labeled **`needs-approval`**.
-   - **No Auto-Merge for `needs-approval`**: If a PR is labeled `needs-approval`, the agent runner **MUST NOT merge** it; it halts and reports `"waiting for César"` in the thread final message.
+   - **Three-Tier Governance (`scripts/classify_pr_risk.py`)**:
+     - **`low-risk`**: Docs only, tests only, or a small fix under 50 changed lines touching zero high-risk paths. Auto-merges upon green `ci` and passing audit/review.
+     - **`normal`**: Standard code changes ($\ge 50$ lines) touching zero high-risk paths. Routes to the autonomous reviewer agent (`review-pr`); auto-merges upon green `ci` and formal reviewer approval.
+     - **`high-risk`**: Touches auth/secrets (`.env*`, `auth/*`, `secrets/*`), workflows (`.github/workflows/*`), branch rules/rulesets (`.github/rulesets/*`), dependencies, models (`models*.yml`), migrations/deletions (`migrations/*`, `*.sql`), deploy (`deploy/*`, `Dockerfile*`), factory config (`.factory/*`), or control plane files (`.agents/skills/*`, `AGENTS.md` per ADR 0001).
+   - **No Auto-Merge for `high-risk`**: If a PR is classified as `high-risk` (or labeled `needs-approval`), the agent runner **MUST NOT auto-merge** it; it halts and reports `"waiting for César"` in the thread final message.
 6. **Squash Merge & Branch Preservation**:
    - Every PR body MUST use `Closes #N` (never `Refs #N`). For epics, the final deploy sub-issue PR also includes `Closes #EPIC`.
    - Once `ci` is green, both Phase 4a and Phase 4b pass on the `main`-rebased head, and the PR satisfies the `low-risk` rule (or human approval is granted), merge via **squash merge**:

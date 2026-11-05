@@ -39,6 +39,8 @@ create_label "ready-to-merge"    "5319E7" "Green CI + independent verification &
 create_label "feature"           "A2EEEF" "New user-facing feature or enhancement"
 create_label "bug"               "D73A4A" "Bug report or regression fix"
 create_label "low-risk"          "0E8A16" "PR risk: docs-only, tests-only, or small fix under 50 lines; auto-merge eligible"
+create_label "normal"            "1D76DB" "PR risk: standard changes without high-risk paths; routes to reviewer agent"
+create_label "high-risk"         "B60205" "PR risk: auth/secrets, workflows, branch rules, deps, models, migrations, deploy; requires César"
 create_label "needs-approval"    "FBCA04" "PR risk: high-risk paths, dependencies, workflows, models, or large diff; requires César approval"
 
 echo ""
