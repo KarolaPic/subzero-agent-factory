@@ -196,6 +196,46 @@ class TestClassifyPRRisk(unittest.TestCase):
         )
         self.assertEqual(proc.stdout.strip(), "needs-approval")
 
+    def test_can_auto_merge_success_for_low_risk(self):
+        stats = [{"path": "README.md", "additions": 10, "deletions": 2}]
+        allowed, reason = classify_pr_risk.can_auto_merge(stats, ci_passed=True, audit_passed=True)
+        self.assertTrue(allowed)
+        self.assertIn("Eligible for auto-merge", reason)
+
+    def test_can_auto_merge_denied_when_needs_approval(self):
+        stats = [{"path": ".github/workflows/ci.yml", "additions": 2, "deletions": 0}]
+        allowed, reason = classify_pr_risk.can_auto_merge(stats, ci_passed=True, audit_passed=True)
+        self.assertFalse(allowed)
+        self.assertIn("waiting for César", reason)
+
+    def test_can_auto_merge_denied_when_ci_not_green(self):
+        stats = [{"path": "README.md", "additions": 10, "deletions": 2}]
+        allowed, reason = classify_pr_risk.can_auto_merge(stats, ci_passed=False, audit_passed=True)
+        self.assertFalse(allowed)
+        self.assertIn("CI check not green", reason)
+
+    def test_can_auto_merge_denied_when_audit_failed(self):
+        stats = [{"path": "README.md", "additions": 10, "deletions": 2}]
+        allowed, reason = classify_pr_risk.can_auto_merge(stats, ci_passed=True, audit_passed=False)
+        self.assertFalse(allowed)
+        self.assertIn("audit did not pass", reason)
+
+    def test_apply_pr_label_command(self):
+        from unittest.mock import patch
+        with patch("subprocess.run") as mock_run:
+            mock_run.return_value.returncode = 0
+            classify_pr_risk.apply_pr_label(41, "low-risk")
+            mock_run.assert_called_once()
+            cmd = mock_run.call_args[0][0]
+            self.assertIn("gh", cmd)
+            self.assertIn("pr", cmd)
+            self.assertIn("edit", cmd)
+            self.assertIn("41", cmd)
+            self.assertIn("--add-label", cmd)
+            self.assertIn("low-risk", cmd)
+            self.assertIn("--remove-label", cmd)
+            self.assertIn("needs-approval", cmd)
+
 
 if __name__ == "__main__":
     unittest.main()

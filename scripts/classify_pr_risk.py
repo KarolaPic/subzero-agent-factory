@@ -194,6 +194,47 @@ def classify_file_stats(stats: List[Dict[str, Any]]) -> Dict[str, Any]:
     }
 
 
+def can_auto_merge(stats: List[Dict[str, Any]], ci_passed: bool = True, audit_passed: bool = True) -> tuple[bool, str]:
+    """Determine if a PR can autonomously auto-merge or requires manual human approval."""
+    classification_res = classify_file_stats(stats)
+    if not classification_res["is_low_risk"]:
+        reasons_summary = "; ".join(classification_res.get("reasons", []))
+        return False, f"PR classified as 'needs-approval' ({reasons_summary}) — waiting for César"
+
+    if not ci_passed:
+        return False, "PR is low-risk but CI check not green — auto-merge blocked"
+
+    if not audit_passed:
+        return False, "PR is low-risk and CI green, but independent audit did not pass — auto-merge blocked"
+
+    return True, "Eligible for auto-merge: low-risk, CI green, and audit passed"
+
+
+def apply_pr_label(pr_number: int, classification: str) -> None:
+    """Apply the risk label to a GitHub pull request via `gh pr edit`."""
+    valid_labels = {"low-risk", "needs-approval"}
+    if classification not in valid_labels:
+        raise ValueError(f"Invalid classification label: {classification}. Expected {valid_labels}")
+
+    remove_label = "needs-approval" if classification == "low-risk" else "low-risk"
+    cmd = [
+        "gh",
+        "pr",
+        "edit",
+        str(pr_number),
+        "--add-label",
+        classification,
+        "--remove-label",
+        remove_label,
+    ]
+    try:
+        subprocess.run(cmd, check=True, capture_output=True, text=True)
+    except subprocess.CalledProcessError:
+        # Fallback without remove-label if other label was not present on the PR
+        cmd_fallback = ["gh", "pr", "edit", str(pr_number), "--add-label", classification]
+        subprocess.run(cmd_fallback, check=True, capture_output=True, text=True)
+
+
 def get_git_diff_numstat(base_ref: Optional[str] = None, head_ref: str = "HEAD") -> str:
     candidates = []
     if base_ref:
@@ -221,6 +262,7 @@ def main() -> int:
     parser.add_argument("--base", type=str, default=None, help="Base git ref for diff comparison (e.g. origin/main)")
     parser.add_argument("--head", type=str, default="HEAD", help="Head git ref for diff comparison")
     parser.add_argument("--label", action="store_true", help="Output only the label string (low-risk or needs-approval)")
+    parser.add_argument("--apply-pr", type=int, default=None, help="PR number to apply the resulting risk label to via gh")
 
     args = parser.parse_args()
 
@@ -231,6 +273,9 @@ def main() -> int:
 
     stats = parse_numstat(numstat_text)
     result = classify_file_stats(stats)
+
+    if args.apply_pr:
+        apply_pr_label(args.apply_pr, result["classification"])
 
     if args.label:
         print(result["classification"])

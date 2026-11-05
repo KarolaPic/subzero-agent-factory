@@ -8,6 +8,8 @@ on:
 
 permissions:
   contents: read
+  pull-requests: write
+  issues: write
 
 jobs:
   ci:
@@ -16,6 +18,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Validate Factory Configuration & Invariants
         run: |
@@ -33,6 +37,7 @@ jobs:
           test -x scripts/setup-models.sh
           bash -n scripts/setup-models.sh
           test -x scripts/validate_models.py
+          test -x scripts/classify_pr_risk.py
           test -f skills-lock.json
           test -f AGENTS.md
           python3 scripts/validate_models.py
@@ -98,6 +103,13 @@ jobs:
             }
             console.log("Factory config, model orchestration, and template-sync manifest invariants OK.");
           '
+
+      - name: Verify PR Risk Classification & Apply Label
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python3 scripts/classify_pr_risk.py --base origin/${{ github.base_ref }} --head HEAD --apply-pr ${{ github.event.pull_request.number }} || python3 scripts/classify_pr_risk.py --base origin/${{ github.base_ref }} --head HEAD
 
       - name: Run Factory Python unit tests
         run: |
