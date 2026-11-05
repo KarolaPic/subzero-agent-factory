@@ -135,8 +135,8 @@ Enforce root-cause engineering discipline directly in the fix:
 2. **Branch & PR**:
    - Create branch: `fix/<issue-number>-<short-description>`.
    - Commit as `cesarchavezcal` (`cesarchavezcal@gmail.com`).
+   - **PR Template Mandate**: PR body MUST strictly follow the short 4-section template (`.github/PULL_REQUEST_TEMPLATE.md`): `Why`, `What changed`, `How it was tested` (combining root-cause reproduction evidence, runtime verification, and Grok audit verdict, with models used read dynamically from `models.yml`), and `Closes #N`.
    - PR body MUST include `Closes #N` so GitHub automatically closes the bug report upon merge. If the bug is the final deploy sub-issue of an epic, also include `Closes #<EPIC_NUMBER>`.
-   - Include root-cause explanation, reproduction evidence, and test diff in the PR description.
 3. **Squash Merge**:
    - Merge ONLY when required status check **`ci`** is green and Grok audit returns `PASS`.
    - Merge command (never delete branches):

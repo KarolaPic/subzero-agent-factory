@@ -12,31 +12,38 @@ metadata:
 Use this template for writing the PR body:
 
 ```markdown
-## Summary
+## Why
 
-<diagram, diff-sketch, or tree>
+<!-- 1–3 sentences explaining the problem and approach. Link context or parent epic if applicable. -->
 
-## Evidence
+## What changed
 
-- **Before:** <screenshot/output/failing test run>
-  **After:** <screenshot/output/passing test run>
+<!-- Concise summary or diff-sketch of the modifications. -->
 
-## Merge Danger
+## How it was tested
 
-**Door:** <one-way or two-way>
+- **Models Used**: `builder: <builder-model>`, `auditor: <auditor-model>` (read from `models.yml`)
+- **Runtime Proof** (`exitCode: 0`):
+```text
+# verification command output
+```
+- **Audit Verdict**:
+```text
+verdict: PASS
+```
 
-<optional: description>
-
-**Blast Radius:** <one-word description>
-
-<optional: potential ramifications of merge>
+Closes #<!-- number (never use Refs #N; for final deploy sub-issue of an epic, also add Closes #EPIC) -->
 ```
 
 ## Sections
 
 Skip all preambles and keep prose brief. Use the user's domain language from `GLOSSARY.md`.
 
-### Summary
+### Why
+
+Brief explanation of the problem, motivation, and solution approach (1–3 sentences). Link parent issues or specifications.
+
+### What changed
 
 Pick the smallest view that makes the key point clear.
 
@@ -155,16 +162,16 @@ Place each visual next to the short text it supports. Keep only the calls, files
 
 You may use one of these, you may use several, it is unlikely you will use all of them. Use your judgement and don't overwhelm the user.
 
-### Evidence
+### How it was tested
 
-Concrete evidence that the change works. Show a before and after.
+Concrete evidence and verification that the change works.
+- Include models dynamically read from `models.yml` (`builder` and `auditor`).
+- Include runtime verification proof (Phase 4a `verify-app` or test run output with `exitCode: 0`).
+- Include independent adversarial interrogation verdict (Phase 4b Grok audit `verdict: PASS`).
 
-Screenshots are S-tier - when the environment is set up for it and the change is visual.
+Screenshots are S-tier for visual changes.
+Execution-based evidence is A-tier: test results, console output showing exact tests passing.
 
-Execution-based evidence is A-tier. Test results, console output. Show the exact test that now fails and passes, using pseudocode.
+### Closes #N
 
-### Merge Danger
-
-Describe whether it's a one-way or two-way door. You can walk back through two-way doors, but not one-way doors. A PR that is cheap to roll back is lower risk. Changes that involve destructive actions or hard-to-reverse decisions are one-way doors.
-
-The blast radius is the potential impact or scope of the changes introduced by this PR. Consider all possibilities. Examples are layout shift, breakages for consumers, mobile responsiveness, etc.
+Mandatory issue closing directive. Always use `Closes #N` (never `Refs #N`). For the final deploy sub-issue of an epic, also append `Closes #<EPIC_NUMBER>`.

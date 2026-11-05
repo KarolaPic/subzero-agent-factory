@@ -108,6 +108,7 @@ High-level orchestrator skill designed for autonomous feature tickets and issue-
    - Create a feature branch off `main`: `feat/<work-item-id>`.
    - Commit changes as `cesarchavezcal` (`cesarchavezcal@gmail.com`).
    - Open a PR targeting `main`.
+   - **PR Template Mandate**: PR body MUST strictly follow the short 4-section template (`.github/PULL_REQUEST_TEMPLATE.md`): `Why`, `What changed`, `How it was tested` (combining runtime verification and Grok audit verdict, with models used read dynamically from `models.yml`), and `Closes #N`.
    - **Issue Link Invariant**: PR body MUST include `Closes #N` so GitHub automatically closes the issue upon merge. If this issue carries the `deploy` label as the final sub-issue of an epic, the PR body MUST ALSO include `Closes #<EPIC_NUMBER>`.
 3. **Merge Gate**:
    - Merge ONLY when:

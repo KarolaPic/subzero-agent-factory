@@ -132,8 +132,13 @@ Execution follows the official pstack [`poteto-mode`](.agents/skills/poteto-mode
 3. **Rework Escalation (Up to 2 Attempts)**:
    - If Phase 4a or Phase 4b fails, increment `retryCount` and escalate the rework pass using the configured `planner` or `builder` model (ensuring it differs from the `auditor`, `maxRetries: 2`).
    - If the ticket still fails after 2 rework attempts, set `status: "blocked"`, `waitingOn: "blocked"`, and stop for human intervention.
-4. **Squash Merge & Branch Preservation**:
-   - Every PR body MUST use `Closes #N` (never `Refs #N`). For epics, the final deploy sub-issue PR also includes `Closes #EPIC`.
+4. **Mandatory Short 4-Section PR Template (`.github/PULL_REQUEST_TEMPLATE.md`)**:
+   - Every opened PR MUST strictly adhere to the concise 4-section pull request template:
+     - `## Why`: Brief explanation of the problem, motivation, and approach (1–3 sentences).
+     - `## What changed`: Concise summary or diff-sketch of the modifications.
+     - `## How it was tested`: Combined runtime verification proof (e.g. `verify-app` or test suite command with `exitCode: 0`) and independent Grok audit verdict (`verdict: PASS`), alongside a short line stating models used (`builder: <model>`, `auditor: <model>`) dynamically read from `models.yml` (never an obsolete static table).
+     - `Closes #N`: Mandatory issue closing directive (never `Refs #N`). For the designated final deploy sub-issue of an epic, also include `Closes #<EPIC_NUMBER>`.
+5. **Squash Merge & Branch Preservation**:
    - Once `ci` is green and both Phase 4a and Phase 4b pass on the `main`-rebased head, merge via **squash merge**:
      ```bash
      gh pr merge <PR_NUMBER> --squash
