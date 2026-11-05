@@ -1,0 +1,160 @@
+import json
+import multiprocessing
+import os
+import shutil
+import tempfile
+import unittest
+from pathlib import Path
+
+from scripts.run_log import (
+    RunLogError,
+    read_runs,
+    record_run,
+    resolve_runs_dir,
+    validate_run_record,
+)
+
+
+def _worker_append(args):
+    runs_dir, worker_id, iterations = args
+    for i in range(iterations):
+        record_run(
+            issue=100 + worker_id,
+            pr=200 + i,
+            result="merged",
+            builder="gemini-3.8-flash-high",
+            auditor="grok-4.7",
+            human_intervened={"occurred": False, "count": 0},
+            pr_score=9.5,
+            runs_dir=Path(runs_dir),
+        )
+
+
+class TestRunLog(unittest.TestCase):
+    def setUp(self):
+        self.test_dir = tempfile.mkdtemp(prefix="test_run_log_")
+        self.runs_dir = Path(self.test_dir) / ".factory" / "runs"
+        self.runs_dir.mkdir(parents=True, exist_ok=True)
+
+    def tearDown(self):
+        shutil.rmtree(self.test_dir, ignore_errors=True)
+
+    def test_schema_file_exists_and_is_valid_json(self):
+        schema_path = Path(".factory/schemas/run.schema.json")
+        self.assertTrue(schema_path.exists())
+        with open(schema_path, "r", encoding="utf-8") as f:
+            schema = json.load(f)
+        self.assertEqual(schema.get("type"), "object")
+        self.assertFalse(schema.get("additionalProperties"))
+        required = set(schema.get("required", []))
+        expected_fields = {
+            "issue",
+            "pr",
+            "kickoff_at",
+            "pr_opened_at",
+            "first_review_at",
+            "merged_at",
+            "human_intervened",
+            "result",
+            "builder",
+            "auditor",
+            "pr_score",
+        }
+        self.assertEqual(required, expected_fields)
+
+    def test_record_run_basic(self):
+        record = record_run(
+            issue=38,
+            pr=45,
+            result="merged",
+            builder="gemini-3.8-flash-high",
+            auditor="grok-4.7",
+            human_intervened={"occurred": True, "count": 1},
+            pr_score=9.8,
+            runs_dir=self.runs_dir,
+        )
+
+        self.assertEqual(record["issue"], 38)
+        self.assertEqual(record["pr"], 45)
+        self.assertEqual(record["result"], "merged")
+        self.assertEqual(record["builder"], "gemini-3.8-flash-high")
+        self.assertEqual(record["auditor"], "grok-4.7")
+        self.assertEqual(record["pr_score"], 9.8)
+        self.assertEqual(record["human_intervened"], {"occurred": True, "count": 1})
+        self.assertIsNotNone(record["kickoff_at"])
+
+        # Verify file content on disk
+        runs_file = self.runs_dir / "runs.jsonl"
+        self.assertTrue(runs_file.exists())
+        lines = read_runs(self.runs_dir)
+        self.assertEqual(len(lines), 1)
+        self.assertEqual(lines[0]["issue"], 38)
+
+    def test_validation_errors(self):
+        # 1. Missing required field
+        invalid_rec = {
+            "issue": 1,
+            "pr": None,
+            "kickoff_at": "2026-11-05T12:00:00Z",
+        }
+        with self.assertRaises(RunLogError):
+            validate_run_record(invalid_rec)
+
+        # 2. Unexpected extra field (token or secret leakage protection)
+        with self.assertRaises(RunLogError):
+            record_run(
+                issue=1,
+                result="merged",
+                builder="gemini-3.8-flash-high",
+                auditor="grok-4.7",
+                runs_dir=self.runs_dir,
+            )
+            bad_rec = read_runs(self.runs_dir)[0]
+            bad_rec["secret_token"] = "gho_xxxx"
+            validate_run_record(bad_rec)
+
+        # 3. Invalid result enum
+        with self.assertRaises(RunLogError):
+            record_run(
+                issue=1,
+                result="unknown_status",
+                builder="gemini-3.8-flash-high",
+                auditor="grok-4.7",
+                runs_dir=self.runs_dir,
+            )
+
+        # 4. Invalid timestamp
+        with self.assertRaises(RunLogError):
+            record_run(
+                issue=1,
+                kickoff_at="not-a-timestamp",
+                result="merged",
+                builder="gemini-3.8-flash-high",
+                auditor="grok-4.7",
+                runs_dir=self.runs_dir,
+            )
+
+    def test_multiprocess_concurrency(self):
+        num_workers = 4
+        iterations = 5
+        total_records = num_workers * iterations
+
+        args_list = [(str(self.runs_dir), w, iterations) for w in range(num_workers)]
+        with multiprocessing.Pool(processes=num_workers) as pool:
+            pool.map(_worker_append, args_list)
+
+        runs_file = self.runs_dir / "runs.jsonl"
+        with open(runs_file, "r", encoding="utf-8") as f:
+            lines = [line.strip() for line in f if line.strip()]
+
+        self.assertEqual(len(lines), total_records)
+
+        records = [json.loads(line) for line in lines]
+        for rec in records:
+            validate_run_record(rec)
+            self.assertEqual(rec["result"], "merged")
+            self.assertEqual(rec["builder"], "gemini-3.8-flash-high")
+
+
+if __name__ == "__main__":
+    unittest.main()

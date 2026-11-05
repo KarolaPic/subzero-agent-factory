@@ -1,2 +1,3 @@
 # Automatically preserve concurrent line appends across parallel worktrees
 .factory/memory/lessons.jsonl merge=union
+.factory/runs/runs.jsonl merge=union

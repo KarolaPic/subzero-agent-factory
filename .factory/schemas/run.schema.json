@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/cesarchavezcal/grok-bot-agent-factory/schemas/runs/run.schema.json",
+  "title": "FactoryRunRecord",
+  "description": "Schema for a single agent run log line appended to .factory/runs/runs.jsonl",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "issue",
+    "pr",
+    "kickoff_at",
+    "pr_opened_at",
+    "first_review_at",
+    "merged_at",
+    "human_intervened",
+    "result",
+    "builder",
+    "auditor",
+    "pr_score"
+  ],
+  "properties": {
+    "issue": {
+      "type": ["integer", "string"],
+      "description": "Issue number or identifier"
+    },
+    "pr": {
+      "type": ["integer", "string", "null"],
+      "description": "Pull request number, URL, or null if uncreated"
+    },
+    "kickoff_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 UTC timestamp when run kicked off"
+    },
+    "pr_opened_at": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "description": "ISO 8601 UTC timestamp when PR was opened"
+    },
+    "first_review_at": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "description": "ISO 8601 UTC timestamp when first review or audit was executed"
+    },
+    "merged_at": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "description": "ISO 8601 UTC timestamp when PR merged to main"
+    },
+    "human_intervened": {
+      "description": "Details or flag indicating whether a human intervened in the run",
+      "oneOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["occurred", "count"],
+          "properties": {
+            "occurred": {
+              "type": "boolean",
+              "description": "Whether human intervention occurred"
+            },
+            "count": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Number of human interventions"
+            }
+          }
+        }
+      ]
+    },
+    "result": {
+      "type": "string",
+      "enum": ["merged", "blocked", "failed"],
+      "description": "Final outcome of the agent run"
+    },
+    "builder": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Builder model identifier that executed the run"
+    },
+    "auditor": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Auditor model identifier that audited the run"
+    },
+    "pr_score": {
+      "type": ["number", "null"],
+      "minimum": 0,
+      "description": "PR score evaluated by T3 or null if uncomputed"
+    }
+  }
+}
