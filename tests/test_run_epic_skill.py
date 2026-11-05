@@ -146,7 +146,45 @@ class TestRunEpicSkill(unittest.TestCase):
         self.assertIn("high-risk", content)
         self.assertIn("--delete-branch", content)
 
+    def test_dual_inputs_and_find_or_create_step(self):
+        with open(self.skill_path, "r", encoding="utf-8") as f:
+            content = f.read()
+
+        self.assertIn("find_or_create_issue.py", content)
+        self.assertIn("plain text request", content.lower())
+        self.assertIn("explicit issue", content.lower())
+
+    def test_matching_rules_and_unclear_criteria(self):
+        with open(self.skill_path, "r", encoding="utf-8") as f:
+            content = f.read()
+
+        self.assertIn("Matching Precedence", content)
+        self.assertIn("run-epic-request:", content)
+        self.assertIn("Exact Title Match", content)
+        self.assertIn("Keyword Overlap Scoring", content)
+        self.assertIn("What Counts as \"Unclear\"", content)
+        self.assertIn("Multiple Possible Matches", content)
+
+    def test_duplicate_prevention_and_marker(self):
+        with open(self.skill_path, "r", encoding="utf-8") as f:
+            content = f.read()
+
+        self.assertIn("Duplicate Prevention", content)
+        self.assertIn("run-epic-request:", content)
+        self.assertIn("Task Card Validation Gate", content)
+
+    def test_documented_walkthroughs(self):
+        with open(self.skill_path, "r", encoding="utf-8") as f:
+            content = f.read()
+
+        self.assertIn("Walkthrough 1: Free Text Request with Match Found", content)
+        self.assertIn("Walkthrough 2: Free Text Request with No Match (Issue Created)", content)
+        self.assertIn("Walkthrough 3: Unclear Request or Multiple Matches (Stops for César)", content)
+        self.assertIn("Walkthrough 4: Resumed Execution & Duplicate Avoidance", content)
+        self.assertIn("Walkthrough 5: Sample 3-Issue Initiative Epic", content)
+
 
 if __name__ == "__main__":
     unittest.main()
+
 

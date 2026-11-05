@@ -5,21 +5,28 @@ description: Autonomous orchestrator skill that executes an entire epic initiati
 
 # Run Epic Orchestrator (`run-epic`)
 
-Autonomous orchestrator skill that drives an entire initiative-level epic from a single command: `$run-epic #N`. It handles automated decomposition (or reuses existing sub-issues), sequential ticket implementation, independent verification and audit gates, PR squash merging, and final deployment without requiring human babysitting or an active Grok Bot dispatcher.
+Autonomous orchestrator skill that drives an entire initiative-level epic from a single command: `$run-epic #N` or `$run-epic <plain text request>`. It handles automated issue discovery / creation (matching open issues or creating a task card with duplicate prevention), automated decomposition (or reuses existing sub-issues), sequential ticket implementation, independent verification and audit gates, PR squash merging, and final deployment without requiring human babysitting or an active Grok Bot dispatcher.
 
 ---
 
 ## Workflow Overview
 
 ```
-$run-epic #N
+$run-epic <#N | plain text request>
      │
      ▼
-[Phase 1: Epic Intake & Discovery]
-  ├─ Inspect target Epic #N (Goal, Done when, Don't touch)
+[Phase 1: Epic Intake, Discovery & Issue Resolution]
+  ├─ If explicit issue (#N, issue N): Use issue #N directly
+  ├─ If free text request: Run find-or-create step (scripts/find_or_create_issue.py):
+  │    ├─ Check if unclear / ambiguous ──► STOP & ask César in thread final message
+  │    ├─ Search open issues (hidden marker, exact title, keyword score):
+  │    │    ├─ One clear match ──► Reuse discovered issue #N
+  │    │    ├─ Multiple candidate matches ──► STOP & ask César in thread final message
+  │    │    └─ No match ──► Create new issue with task card & hidden marker, label 'agent'
+  │    └─ Verify task card fields (Goal, Done when, Don't touch) before build starts
   ├─ Query existing sub-issues: gh issue list --search "Part of #N"
   ├─ If sub-issues exist ──► Reuse discovered sub-issues in dependency order
-  └─ If none exist ───────► Invoke plan-epic #N to decompose & verify labels
+  └─ If none exist ───────► If epic, invoke plan-epic #N to decompose; else execute ticket directly
      │
      ▼
 [Phase 2: Anti-Clash & Concurrency Guard]
@@ -69,33 +76,87 @@ $run-epic #N
 
 ---
 
-## Phase 1: Epic Intake & Discovery
+## Phase 1: Epic Intake, Discovery & Find-or-Create Resolution
 
-1. **Invocation**:
-   Command pattern: `$run-epic #<EPIC_NUMBER>` or `$run-epic <EPIC_NUMBER>`.
-2. **Inspect Epic Task Card**:
-   - Fetch the epic:
-     ```bash
-     gh issue view "$EPIC_NUMBER" --json title,body,labels,state
+### 1. Dual Command Invocations
+`$run-epic` accepts both an explicit issue number and a plain text request:
+- **Explicit Issue Input**: `$run-epic #<EPIC_NUMBER>`, `$run-epic <EPIC_NUMBER>`, or `$run-epic issue <EPIC_NUMBER>`.
+- **Plain Text Request**: `$run-epic <free text request>` (for example, `$run-epic add a dark mode toggle` or `$run-epic export telemetry logs to s3`).
+
+### 2. Find-or-Create Issue Resolution (`scripts/find_or_create_issue.py`)
+When invoked with free text, `$run-epic` executes `python3 scripts/find_or_create_issue.py --query "<request>" --json` to resolve or create the issue before starting the execution loop:
+
+```bash
+INTAKE_JSON=$(python3 scripts/find_or_create_issue.py --query "$USER_INPUT" --json)
+STATUS=$(echo "$INTAKE_JSON" | jq -r '.status')
+```
+
+#### A. Input Classification & Explicit Issue Resolution
+If the input starts with `#`, `issue `, or is a pure integer:
+- Resolves immediately to the target issue number `#N` without querying search.
+- Existing `$run-epic #N` behavior remains 100% backward-compatible and unchanged.
+
+#### B. Search & Matching Precedence
+For free text requests, open issues are queried (`gh issue list --state open`) and evaluated in order of strict precedence:
+1. **Exact Hidden Idempotency Marker (Highest Priority)**:
+   - Every issue created by `$run-epic` embeds a hidden HTML comment marker in its body:
+     ```html
+     <!-- run-epic-request: <normalized_request> -->
      ```
-   - Verify task card sections per `AGENTS.md` Section 2:
-     - **Goal**
-     - **Done when**
-     - **Don't touch**
-   - If any section is missing or ambiguous, **STOP immediately** and write questions in the thread final message.
-3. **Sub-Issue Discovery vs. Decomposition**:
-   - Search for existing sub-issues created for this epic:
-     ```bash
-     EXISTING_SUB_ISSUES=$(gh issue list --search "Part of #$EPIC_NUMBER in:body" --json number,title,labels,state --limit 50)
-     ```
-   - **Case A (Sub-issues already exist)**:
-     - Parse the list into dependency order.
-     - Verify sub-issues carry `agent` label, and exactly one final sub-issue carries `deploy`.
-     - Log: `"Reusing existing sub-issues for Epic #<N>: <IDs>"`
-   - **Case B (No sub-issues exist yet)**:
-     - Execute [`plan-epic`](../plan-epic/SKILL.md) on `#EPIC_NUMBER`.
-     - `plan-epic` generates the vertical tracer-bullet sub-issues with `agent` labels, applies `deploy` to the final sub-issue, and validates the label invariants.
-     - Capture the newly created sub-issue numbers into the execution queue.
+   - If an open issue contains this exact marker matching the normalized query, it is chosen immediately.
+   - **Guarantees zero duplicate issues** when re-running the same request.
+2. **Exact Title Match**:
+   - Matches if normalized issue title equals normalized request (ignoring conventional commit prefixes like `feat:`, `fix:`, `docs:`, etc.).
+3. **Keyword Overlap Scoring**:
+   - Evaluates tokenized keywords (with English stop words removed).
+   - Weighted score: Title keyword matches carry **3x weight** relative to body keyword matches.
+   - If all query keywords appear in the issue title, confidence is high ($\ge 90\%$).
+
+#### C. Resolution Outcomes
+1. **One Clear Match**:
+   - Single candidate with confidence score $\ge 80\%$ and at least $25\%$ lead over the second candidate (or single strong candidate).
+   - `$run-epic` automatically attaches to this issue and proceeds to the execution loop.
+2. **Multiple Possible Matches**:
+   - Multiple candidate issues match with similar scores (no clear winner).
+   - **STOP immediately**. Do NOT pick arbitrarily. Present candidate issue numbers and titles to César in the **thread final message** and wait for his instruction.
+3. **Unclear Request**:
+   - The request is evaluated against the Unclear Request Criteria.
+   - If unclear, **STOP immediately**. Write an explanation in the **thread final message** asking César for clarification or an explicit issue number.
+4. **No Match Found (Issue Creation)**:
+   - When zero issues match, `$run-epic` creates a new issue via `gh issue create`.
+   - Title: Formatted with conventional prefix (e.g. `feat: <request>`).
+   - Body: Standardized Task Card with mandatory **Goal**, **Done when**, and **Don't touch** sections, plus the hidden idempotency marker `<!-- run-epic-request: <normalized_request> -->`.
+   - Labels: Applied with `agent` (and `epic` if initiative decomposition is needed).
+   - **Task Card Validation Gate (#26)**: Validates that Goal, Done when, and Don't touch are all present and non-empty. If validation fails, execution stops immediately.
+
+### 3. What Counts as "Unclear"
+A request is classified as **unclear** and halted for César if it meets any of the following:
+- **Empty or Too Short**: Query is empty or shorter than 3 characters (e.g. `""`, `"hi"`).
+- **Stop Words Only**: Query consists entirely of common function words without actionable verbs or nouns (e.g. `"can you please do this for me"`).
+- **Single Generic Word**: Query is a single generic word without a target component or subsystem (e.g. `"fix"`, `"update"`, `"bug"`, `"test"`, `"problem"`).
+- **Generic Vague Phrase**: Query consists only of generic words without naming an identifiable entity (e.g. `"fix bug"`, `"update tests"`, `"make changes"`).
+- **Unfillable Task Card**: The request is so ambiguous that concrete acceptance criteria cannot be formed without making ungrounded assumptions.
+
+### 4. Duplicate Prevention & Idempotency
+- When an issue is created for a free text request, its body includes `<!-- run-epic-request: <normalized_request> -->`.
+- If the user runs the exact same request again (e.g. `$run-epic add dark mode toggle`), the intake search step finds the existing issue via the hidden marker and re-attaches to it instead of creating a second issue.
+- Idempotent and resumable, identical to `$run-epic #N`.
+
+### 5. Inspect Epic Task Card & Sub-Issue Discovery
+Once the issue `#EPIC_NUMBER` is resolved or created:
+1. Fetch the issue:
+   ```bash
+   gh issue view "$EPIC_NUMBER" --json title,body,labels,state
+   ```
+2. Verify task card sections (**Goal**, **Done when**, **Don't touch**).
+3. Query existing sub-issues:
+   ```bash
+   EXISTING_SUB_ISSUES=$(gh issue list --search "Part of #$EPIC_NUMBER in:body" --json number,title,labels,state --limit 50)
+   ```
+4. **Case A (Sub-issues exist)**: Reuse discovered sub-issues in dependency order.
+5. **Case B (No sub-issues exist)**:
+   - If issue carries label `epic`, invoke [`plan-epic`](../plan-epic/SKILL.md) on `#EPIC_NUMBER` to decompose into vertical tracer bullets.
+   - If issue is a standalone ticket (non-epic), queue the issue itself directly for execution in Phase 4.
 
 ---
 
@@ -305,19 +366,77 @@ At any point during the `$run-epic` loop, execution **MUST halt immediately** wi
 
 ## Phase 8: Idempotency & Resumability
 
-`$run-epic` is designed to be safely interrupted and re-run at any time (`$run-epic #N`):
+`$run-epic` is designed to be safely interrupted and re-run at any time (`$run-epic #N` or `$run-epic <plain request>`):
 
 - **Merged Slices**: Skipped without repeated runs.
 - **Open PRs**: Identified and reconnected to without creating duplicate PRs.
 - **Existing Worktrees / Branches**: Fetched and rebased cleanly off `origin/main`.
 - **Existing Sub-Issues**: Reused without re-running `plan-epic`.
-- **Duplicate Prevention**: No duplicate sub-issues or PRs are ever generated.
+- **Duplicate Prevention**: Re-running a free text request finds the issue created during previous runs via the embedded marker `<!-- run-epic-request: <normalized_request> -->`. Zero duplicate issues or PRs are ever generated.
 
 ---
 
-## Dry-Run Walkthrough: Sample 3-Issue Epic
+## Documented Dry-Run Walkthroughs
 
-To illustrate the exact flow on a representative initiative (Epic `#100` with 3 sub-issues):
+### Walkthrough 1: Free Text Request with Match Found
+**Scenario**: An open issue `#105` ("feat: add a dark mode toggle") already exists in the repository.
+1. César runs: `$run-epic add a dark mode toggle`.
+2. Intake runs `find_or_create_issue.py --query "add a dark mode toggle" --json`.
+3. The matching engine evaluates open issues:
+   - Evaluates title tokens `['dark', 'mode', 'toggle']`.
+   - Issue `#105` matches all keywords in the title (confidence: 95%).
+   - One clear match found: `#105`.
+4. `$run-epic` logs: `"Match found: using existing issue #105 ('feat: add a dark mode toggle')"`
+5. Proceeds directly to Phase 2 (Anti-Clash) and Phase 4 (Sequential Loop) on `#105`.
+
+### Walkthrough 2: Free Text Request with No Match (Issue Created)
+**Scenario**: César wants a new feature not yet tracked in GitHub: `"add customer billing receipt email notification"`.
+1. César runs: `$run-epic add customer billing receipt email notification`.
+2. Intake runs `find_or_create_issue.py --query "add customer billing receipt email notification" --json`.
+3. The matching engine scans open issues; zero issues match.
+4. Issue creation:
+   - Generates task card with **Goal**, **Done when**, **Don't touch**, and hidden marker:
+     ```html
+     <!-- run-epic-request: add customer billing receipt email notification -->
+     ```
+   - Labels with `agent` and `enhancement`.
+   - Validates task card sections (passes #26 gate).
+   - Creates new issue (e.g. `#110`) via `gh issue create`.
+5. `$run-epic` logs: `"Created issue #110 for 'add customer billing receipt email notification'"`
+6. Proceeds to execution loop on `#110`.
+
+### Walkthrough 3: Unclear Request or Multiple Matches (Stops for César)
+**Scenario A (Unclear Request)**:
+1. César runs: `$run-epic fix bug`.
+2. Intake evaluates the request: query contains only generic words without target context.
+3. `$run-epic` **halts immediately**.
+4. Writes alert in the **thread final message**:
+   > *"Request 'fix bug' is too vague. Please provide specific component names, symptoms, or an explicit issue number (e.g. `$run-epic #123`)."*
+
+**Scenario B (Multiple Candidate Matches)**:
+1. César runs: `$run-epic database connection pool`.
+2. Intake searches open issues and finds two close matches:
+   - `#120`: `chore: database connection pool timeouts` (score: 90%)
+   - `#121`: `fix: database connection pool leak on reconnect` (score: 90%)
+3. Neither candidate holds a 25% margin.
+4. `$run-epic` **halts immediately**.
+5. Reports candidates in the **thread final message**:
+   > *"Multiple candidate issues match 'database connection pool':*
+   > *- #120: chore: database connection pool timeouts*
+   > *- #121: fix: database connection pool leak on reconnect*
+   > *Please specify which issue number you want to run."*
+
+### Walkthrough 4: Resumed Execution & Duplicate Avoidance
+**Scenario**: César previously ran `$run-epic add customer billing receipt email notification` which created `#110`, but execution was interrupted before PR merge.
+1. César re-runs: `$run-epic add customer billing receipt email notification`.
+2. Intake searches open issues:
+   - Scans issue bodies for `<!-- run-epic-request: add customer billing receipt email notification -->`.
+   - Finds exact marker match on issue `#110`!
+3. Reattaches to `#110` without creating a duplicate issue.
+4. Checks branch/PR state: reconnects to existing branch or PR, finishes testing/audit, and drives to merge.
+
+### Walkthrough 5: Sample 3-Issue Initiative Epic (`$run-epic #100`)
+To illustrate the full multi-issue initiative flow:
 
 ```
 Initiative Epic #100: "Add Payment Gateway"
@@ -327,7 +446,7 @@ Initiative Epic #100: "Add Payment Gateway"
 ```
 
 1. **Run 1 (`$run-epic #100`)**:
-   - Inspects `#100`; discovers `#101`, `#102`, `#103` (or plans them).
+   - Inspects `#100`; discovers `#101`, `#102`, `#103` (or plans them via `plan-epic`).
    - Starts `#101`: checks out `feat/101-slice`, runs TDD, passes `verify-app`, passes Grok audit.
    - Opens PR `#104` (`Closes #101`). CI turns green. Squash merges.
    - Continues to `#102`: checks out `feat/102-slice`, implements, passes tests & audit. Opens PR `#105` (`Closes #102`).

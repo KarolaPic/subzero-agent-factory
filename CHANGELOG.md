@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Free text request intake for `$run-epic` (`scripts/find_or_create_issue.py`), enabling execution from natural language prompts with automated matching, task card generation, and duplicate prevention via hidden idempotency markers ([#89](https://github.com/cesarchavezcal/grok-bot-agent-factory/issues/89)).
+- Unit test suite `tests/test_find_or_create_issue.py` verifying matching precedence, unclear request rejection, task card validation, and duplicate avoidance.
+- Updated `.agents/skills/run-epic/SKILL.md`, `AGENTS.md`, and `docs/setup.md` with documented dry-run walkthroughs and intake rules.
+
 ## [2026-11-05] — Factory Overhaul & Autonomous Governance
 
 ### Added
