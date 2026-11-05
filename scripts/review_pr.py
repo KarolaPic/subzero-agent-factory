@@ -274,8 +274,11 @@ def evaluate_review(
             findings.append("Violates 'Don't touch': models.yml was modified.")
         # Check for branch deletion
         if "never delete branch" in constraint_lower or "delete-branch" in constraint_lower:
-            if "--delete-branch" in diff_text:
-                findings.append("Violates 'Don't touch': diff contains '--delete-branch' directive.")
+            for diff_line in diff_text.splitlines():
+                if diff_line.startswith("+") and not diff_line.startswith("+++"):
+                    if re.search(r"gh\s+pr\s+merge\b.*--delete-branch", diff_line):
+                        findings.append("Violates 'Don't touch': diff contains 'gh pr merge --delete-branch' invocation.")
+                        break
         # Check for bot comments
         if "no bot comments" in constraint_lower:
             if "issue comment" in diff_text.lower() and "scripts/" in diff_text:
@@ -576,7 +579,15 @@ def main() -> int:
             test_evidence_text = te_path.read_text(encoding="utf-8")
         else:
             test_evidence_text = args.test_evidence
-    elif args.dry_run:
+    elif args.pr:
+        try:
+            body = fetch_pr_body(args.pr)
+            match = re.search(r"##\s*(?:How it was tested|Verification)\s*\n(.*?)(?=\n##|\Z)", body, re.DOTALL | re.IGNORECASE)
+            if match and match.group(1).strip():
+                test_evidence_text = match.group(1).strip()
+        except Exception:
+            pass
+    if not test_evidence_text and args.dry_run:
         test_evidence_text = "Ran 90 tests in 10s\nOK\nexitCode === 0"
 
     # 5. Determine round number
@@ -613,7 +624,10 @@ def main() -> int:
     # Optional run log recording
     if args.record_run and args.issue and args.pr and not args.dry_run:
         try:
-            from scripts.run_log import record_run
+            try:
+                from scripts.run_log import record_run
+            except ImportError:
+                from run_log import record_run  # type: ignore
             rev_map = {"APPROVE": "approved", "REQUEST_CHANGES": "changes_requested"}
             record_run(
                 issue=args.issue,
