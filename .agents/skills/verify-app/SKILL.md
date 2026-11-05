@@ -34,10 +34,23 @@ Stable handles only (ARIA roles/labels, data attributes, CLI flags, HTTP routes)
 ## Evidence
 
 Write `artifacts/<work-item-id>/`. Capture the action and the resulting state:
-- **UI**: ARIA snapshot + screenshot.
-- **CLI / API**: stdout, stderr, HTTP status, and exit code (`0`).
+- **UI / Frontend**:
+  - ARIA snapshot + screenshot across all interactive states.
+  - **Mandatory `break-ui` Stress-Test**: Feed worst-case data (long unbreakable strings, zero items, 1-item boundary, extreme counts, non-Latin/emoji text) to ensure layout resilience without clipping or text overlap. Output findings to `artifacts/<work-item-id>/break-ui.json`.
+  - **Mandatory `match` Visual Parity**: When modifying or implementing UI components against a design reference or spec, perform a side-by-side comparison using `match`. Verify computed styles, spacing, typography tokens, and multi-state parity (hover, focus, disabled, empty, error). Record comparisons in `artifacts/<work-item-id>/match-report.md`.
+- **CLI / API / Backend**: stdout, stderr, HTTP status, and exit code (`0`).
 - **Mutations**: a second read-only check proving persisted state.
+
+## Pass / Fail Criteria & Exit Codes
+
+Phase 4a verification strictly passes only when:
+1. The verification runner terminates cleanly with **`exitCode === 0`**.
+2. For UI changes:
+   - `break-ui` reports zero unhandled regressions, container blowouts, or text collisions.
+   - `match` reports zero unresolved visual differences against the target specification.
+3. Proof artifacts are written to `artifacts/<work-item-id>/` before opening or updating a PR.
 
 ## Cleanup
 
 Kill only the PID or process this run started. Remove temporary fixture data. **Keep `artifacts/<work-item-id>/`.**
+
