@@ -83,6 +83,7 @@ HIGH_RISK_PREFIXES = (
     ".github/rulesets/",
     ".factory/",
     ".agents/skills/",
+    "scripts/",
     "migrations/",
     "migration/",
     "auth/",
@@ -123,6 +124,8 @@ def get_high_risk_violation(path_str: str) -> Optional[str]:
                 return f'Touches protected skill evolution path: {norm} (ADR 0001)'
             if prefix.startswith('.factory'):
                 return f'Touches protected factory config path: {norm}'
+            if prefix.startswith('scripts'):
+                return f'Touches protected script automation path: {norm}'
             if prefix.startswith('migrations') or prefix.startswith('migration'):
                 return f'Touches protected database migrations path: {norm}'
             if prefix.startswith('auth') or prefix.startswith('secrets'):
