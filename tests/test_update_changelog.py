@@ -36,15 +36,15 @@ class TestUpdateChangelog(unittest.TestCase):
         # Entry with both issue and PR
         entry = format_entry(
             summary="support autonomous changelog updates",
-            repo_slug="cesarchavezcal/grok-bot-agent-factory",
+            repo_slug="cesarchavezcal/subzero-agent-factory",
             issue=122,
             pr=123,
         )
         self.assertEqual(
             entry,
             "- Support autonomous changelog updates "
-            "([#122](https://github.com/cesarchavezcal/grok-bot-agent-factory/issues/122), "
-            "[#123](https://github.com/cesarchavezcal/grok-bot-agent-factory/pull/123)).",
+            "([#122](https://github.com/cesarchavezcal/subzero-agent-factory/issues/122), "
+            "[#123](https://github.com/cesarchavezcal/subzero-agent-factory/pull/123)).",
         )
 
         # Entry with only issue
@@ -103,7 +103,7 @@ class TestUpdateChangelog(unittest.TestCase):
             changelog_path=self.changelog_path,
             summary="install impeccable skill and automate changelog updates",
             category="Added",
-            repo_slug="cesarchavezcal/grok-bot-agent-factory",
+            repo_slug="cesarchavezcal/subzero-agent-factory",
             issue=122,
             pr=123,
         )

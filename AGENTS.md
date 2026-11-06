@@ -1,4 +1,4 @@
-# AGENTS.md — Grok Bot Agent Factory
+# AGENTS.md — Subzero Agent Factory (Codename: Subzero)
 
 This repository is an autonomous software factory powered by **T3 Code**, official **`mattpocock/skills`**, and official **`pstack` (`poteto-mode`)**, coordinated with an external dispatcher (**Grok Bot**).
 
@@ -6,13 +6,13 @@ This repository is an autonomous software factory powered by **T3 Code**, offici
 
 ## 0. Creating a New Project & `template init`
 
-> **Visibility Rule (GitHub Free):** While the template `cesarchavezcal/grok-bot-agent-factory` remains **PRIVATE**, **every working repository created from this template MUST be PUBLIC** (`--public`) so that GitHub Free permits branch protection (`ci` required status check) and `allow_auto_merge`.
+> **Visibility Rule (GitHub Free):** While the template `cesarchavezcal/subzero-agent-factory` remains **PRIVATE**, **every working repository created from this template MUST be PUBLIC** (`--public`) so that GitHub Free permits branch protection (`ci` required status check) and `allow_auto_merge`.
 
 When an agent or **Grok Bot** creates a new working project from this template:
 
 ```bash
 # 1. Create the new working repository as PUBLIC from the private template
-gh repo create <name> --public --template cesarchavezcal/grok-bot-agent-factory --clone
+gh repo create <name> --public --template cesarchavezcal/subzero-agent-factory --clone
 cd <name>
 
 # 2. Run idempotent bootstrap (or `./scripts/init.sh --create-repo <name>` from a local dir)

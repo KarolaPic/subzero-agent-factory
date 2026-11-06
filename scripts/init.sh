@@ -61,7 +61,7 @@ fi
 echo ""
 echo "📦 [2/6] Installing/updating official skills from skills-lock.json..."
 
-NPM_CACHE_DIR="${NPM_CONFIG_CACHE:-/tmp/grok-bot-agent-factory-npm-cache}"
+NPM_CACHE_DIR="${NPM_CONFIG_CACHE:-/tmp/subzero-agent-factory-npm-cache}"
 
 install_official_skills_fallback() {
   npm_config_cache="$NPM_CACHE_DIR" npx -y skills add https://github.com/mattpocock/skills/tree/59db609eb1e18aaf59b63284d0e52255aff0c63c --skill domain-modeling grilling tdd to-spec to-tickets wayfinder -y
@@ -104,7 +104,7 @@ if [ -n "$REPO_SLUG" ]; then
 else
   echo "  ⚠️ No GitHub remote detected yet."
   echo "     To create a new PUBLIC working repo from the template, run:"
-  echo "       gh repo create <name> --public --template cesarchavezcal/grok-bot-agent-factory --clone"
+  echo "       gh repo create <name> --public --template cesarchavezcal/subzero-agent-factory --clone"
   echo "     Or from an existing local checkout:"
   echo "       ./scripts/init.sh --create-repo <name>"
 fi
@@ -134,7 +134,7 @@ if [ -n "$REPO_SLUG" ]; then
       echo "     GitHub rejected allow_auto_merge on '$REPO_SLUG' (visibility: $REPO_VISIBILITY)."
       echo "     GitHub Free does NOT allow auto-merge on PRIVATE repositories."
       echo "     Working repositories created from this template MUST be PUBLIC:"
-      echo "       gh repo create <name> --public --template cesarchavezcal/grok-bot-agent-factory --clone"
+      echo "       gh repo create <name> --public --template cesarchavezcal/subzero-agent-factory --clone"
       echo "     Or make an existing working repo public with:"
       echo "       gh repo edit $REPO_SLUG --visibility public --accept-visibility-change-consequences"
       # Still apply squash-only and delete_branch_on_merge=false even if allow_auto_merge requires public/Pro
@@ -173,9 +173,9 @@ EOF
     if echo "$PROT_ERR" | grep -qiE "403|Upgrade to GitHub Pro|make this repository public"; then
       echo "  ⚠️  EXPLICIT WARNING (Branch Protection on '$REPO_SLUG:main'):"
       echo "     GitHub API returned HTTP 403: Branch protection is unavailable on PRIVATE repositories under GitHub Free."
-      echo "     (Note: the template 'cesarchavezcal/grok-bot-agent-factory' stays PRIVATE, so this warning is expected on the template itself.)"
+      echo "     (Note: the template 'cesarchavezcal/subzero-agent-factory' stays PRIVATE, so this warning is expected on the template itself.)"
       echo "     For any WORKING repository created from this template, create it as PUBLIC:"
-      echo "       gh repo create <name> --public --template cesarchavezcal/grok-bot-agent-factory --clone"
+      echo "       gh repo create <name> --public --template cesarchavezcal/subzero-agent-factory --clone"
       echo "     Or switch an existing working repo to PUBLIC and re-run ./scripts/init.sh:"
       echo "       gh repo edit $REPO_SLUG --visibility public --accept-visibility-change-consequences && ./scripts/init.sh"
     else
@@ -265,7 +265,7 @@ if [ -f ".factory/config.json" ]; then
     const file = ".factory/config.json";
     const cfg = JSON.parse(fs.readFileSync(file, "utf8"));
     const appSlug = process.env.APP_NAME;
-    if (cfg.app === "app" && appSlug && appSlug !== "grok-bot-agent-factory") {
+    if (cfg.app === "app" && appSlug && appSlug !== "subzero-agent-factory" && appSlug !== "grok-bot-agent-factory") {
       cfg.app = appSlug;
       fs.writeFileSync(file, JSON.stringify(cfg, null, 2) + "\n", "utf8");
       console.log("  ✓ Updated .factory/config.json app slug to: " + appSlug);

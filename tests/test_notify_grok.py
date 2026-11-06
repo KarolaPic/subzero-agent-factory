@@ -114,7 +114,7 @@ class TestNotifyGrok(unittest.TestCase):
 
     def test_jq_payload_transformation(self):
         sample_event = '{"issue":{"number":42,"labels":[{"name":"bug"},{"name":"agent"}]}}'
-        idempotency_key = "cesarchavezcal/grok-bot-agent-factory#42"
+        idempotency_key = "cesarchavezcal/subzero-agent-factory#42"
         delivery_id = "42-12345-1"
         run_id = "12345"
         models_json = '{"builder":"gemini-3.8-flash-high","auditor":"grok-4.7","planner":"gemini-3.8-flash-high","epic_planner":"gemini-3.8-flash-high","subagents":"gemini-3.8-flash-high"}'

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Changelog updater script for Grok Bot Agent Factory.
+"""Changelog updater script for Subzero Agent Factory (Subzero).
 
 Adheres to Keep a Changelog (https://keepachangelog.com/en/1.0.0/) and Semantic Versioning.
 Automatically inserts formatted entries into CHANGELOG.md under ## [Unreleased]
@@ -73,7 +73,7 @@ def get_repo_slug(cwd: Optional[Path] = None) -> str:
             return match.group(1)
     except Exception:
         pass
-    return "cesarchavezcal/grok-bot-agent-factory"
+    return "cesarchavezcal/subzero-agent-factory"
 
 
 def map_type_to_category(change_type: str) -> str:

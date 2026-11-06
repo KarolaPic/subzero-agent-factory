@@ -1,18 +1,23 @@
-# Grok Bot Agent Factory (Template)
+# Subzero Agent Factory (Codename: Subzero)
 
-Reusable, zero-API-key, Claude-free software factory template orchestrated with **T3 Code**, official **`mattpocock/skills`**, and official **`pstack` (`poteto-mode`)**, designed to work with an external issue dispatcher (**Grok Bot**).
+Autonomous, zero-paid-API-key, Claude-free software factory template orchestrated with **T3 Code**, official **`mattpocock/skills`**, and official **`pstack` (`poteto-mode`)**, designed to work with an external issue dispatcher (**Grok Bot**).
+
+> **Codename: Subzero**
+>
+> * **Subzero Cost**: Strict zero-cost invariant (`"strictZeroCost": true`). Operates exclusively through signed-in model sessions (Gemini / Antigravity quota + Grok / Cursor free tiers) with zero paid API keys (`GEMINI_API_KEY`, `XAI_API_KEY`, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY` are forbidden).
+> * **Cold Autonomous Precision**: Worktree-isolated execution, test-driven development (TDD), runtime verification, independent adversarial audits, and automated merge gates without human intervention.
 
 ---
 
 ## Quick Start (`template init` — Public Working Repos)
 
-> **Note on Visibility (GitHub Free):** This template repository (`cesarchavezcal/grok-bot-agent-factory`) is **PRIVATE**, but **all working repositories created from it MUST be PUBLIC** (`--public`) so GitHub Free enables branch protection (`ci` required status check) and `allow_auto_merge`.
+> **Note on Visibility (GitHub Free):** This template repository (`cesarchavezcal/subzero-agent-factory`) is **PRIVATE**, but **all working repositories created from it MUST be PUBLIC** (`--public`) so GitHub Free enables branch protection (`ci` required status check) and `allow_auto_merge`.
 
 When creating a new project from this template (manually or via **Grok Bot**):
 
 ```bash
 # 1. Create a PUBLIC working repository from the template
-gh repo create <name> --public --template cesarchavezcal/grok-bot-agent-factory --clone
+gh repo create <name> --public --template cesarchavezcal/subzero-agent-factory --clone
 cd <name>
 
 # 2. Run the idempotent initialization script
@@ -34,7 +39,7 @@ See [`docs/setup.md`](docs/setup.md) for manual GitHub/Linear setup details and 
 
 ### Syncing Upstream Template Updates (`sync-template.sh`)
 
-Inside any working repository derived from this template (or from a template checkout targeting another repo via `--target`), pull the latest managed workflows, scripts, skills, and rules from the private `cesarchavezcal/grok-bot-agent-factory` template and open a PR:
+Inside any working repository derived from this template (or from a template checkout targeting another repo via `--target`), pull the latest managed workflows, scripts, skills, and rules from the private `cesarchavezcal/subzero-agent-factory` template and open a PR:
 
 ```bash
 ./scripts/sync-template.sh                          # Sync from `main` (default)

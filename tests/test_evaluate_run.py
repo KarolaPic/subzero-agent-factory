@@ -23,7 +23,7 @@ class TestEvaluateRun(unittest.TestCase):
         work_item = {
             "id": "gh-99",
             "issueNumber": 40,
-            "source": "https://github.com/cesarchavezcal/grok-bot-agent-factory/issues/40",
+            "source": "https://github.com/cesarchavezcal/subzero-agent-factory/issues/40",
             "label": "agent",
             "stage": "complete",
             "status": "complete",
@@ -52,7 +52,7 @@ class TestEvaluateRun(unittest.TestCase):
     def test_evaluate_merged_pr_records_lesson_and_run_log(self):
         res = evaluate_merged_pr(
             pr_number=99,
-            pr_url="https://github.com/cesarchavezcal/grok-bot-agent-factory/pull/99",
+            pr_url="https://github.com/cesarchavezcal/subzero-agent-factory/pull/99",
             mem_dir=self.mem_dir,
             runs_dir=self.runs_dir,
             repo_root=self.repo_root,

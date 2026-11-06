@@ -40,7 +40,7 @@ class TestMemoryStore(unittest.TestCase):
             failure_class="audit_interrogation_failure",
             rubric_violated="principle-fix-root-causes",
             evidence_summary="Null guard added in index.ts without root-cause fix",
-            pr_url="https://github.com/cesarchavezcal/grok-bot-agent-factory/pull/1",
+            pr_url="https://github.com/cesarchavezcal/subzero-agent-factory/pull/1",
             threshold=3,
             mem_dir=self.mem_dir,
         )

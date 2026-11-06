@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/cesarchavezcal/grok-bot-agent-factory/schemas/memory/lesson.schema.json",
+  "$id": "https://github.com/cesarchavezcal/subzero-agent-factory/schemas/memory/lesson.schema.json",
   "title": "FactoryLessonRecord",
   "description": "Schema for an atomic lesson record appended to .factory/memory/lessons.jsonl",
   "type": "object",

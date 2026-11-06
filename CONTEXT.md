@@ -1,6 +1,6 @@
 # CONTEXT.md
 
-Canonical glossary and domain model for `grok-bot-agent-factory`. Implementation details, scratchpads, and execution specs belong elsewhere.
+Canonical glossary and domain model for `subzero-agent-factory` (Codename: **Subzero**). Implementation details, scratchpads, and execution specs belong elsewhere.
 
 ---
 
