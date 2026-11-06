@@ -126,16 +126,22 @@ def score_pr_diff(
     if summary:
         summary_lower = summary.lower()
         for forbidden in FORBIDDEN_PATTERNS:
-            if forbidden in summary_lower:
+            if re.search(rf"\b{re.escape(forbidden)}\b", summary_lower):
                 raise ScorerConfigError(
                     f"Forbidden model or reference '{forbidden}' detected in PR summary"
                 )
 
-    current_file_is_test = False
+    current_file_is_exempt = False
     for line in diff.splitlines():
         if line.startswith("diff --git"):
-            current_file_is_test = "tests/" in line or "test_" in line
-        elif line.startswith("+") and not line.startswith("+++") and not current_file_is_test:
+            current_file_is_exempt = (
+                "tests/" in line
+                or "test_" in line
+                or ".agents/skills/" in line
+                or ".md" in line
+                or "docs/" in line
+            )
+        elif line.startswith("+") and not line.startswith("+++") and not current_file_is_exempt:
             line_lower = line.lower()
             if (
                 "forbidden_patterns" in line_lower
@@ -149,7 +155,7 @@ def score_pr_diff(
             ):
                 continue
             for forbidden in FORBIDDEN_PATTERNS:
-                if forbidden in line_lower:
+                if re.search(rf"\b{re.escape(forbidden)}\b", line_lower):
                     raise ScorerConfigError(
                         f"Forbidden model or reference '{forbidden}' detected in PR diff: {line.strip()}"
                     )

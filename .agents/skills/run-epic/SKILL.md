@@ -285,6 +285,12 @@ for SUB_NUM in "${SUB_ISSUES[@]}"; do
     CLOSING_DIRECTIVE="Closes #${SUB_NUM}"
   fi
 
+  # Record changelog entry under [Unreleased] before PR creation
+  if [ -f "scripts/update_changelog.py" ]; then
+    python3 scripts/update_changelog.py --summary "Execute sub-issue #${SUB_NUM}" --type feat --issue "$SUB_NUM"
+    git add CHANGELOG.md && git commit -m "docs(changelog): record sub-issue #${SUB_NUM}" || true
+  fi
+
   # Create PR if not already open
   PR_NUM=$(gh pr list --head "$BRANCH" --json number --jq '.[0].number')
   if [ -z "$PR_NUM" ]; then
