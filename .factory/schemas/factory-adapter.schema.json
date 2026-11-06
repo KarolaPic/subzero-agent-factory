@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "FactoryProjectAdapterConfig",
+  "description": "Configuration schema for .factory.yml project adapters in External Core Factory",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Optional project identifier name"
+    },
+    "framework": {
+      "type": "string",
+      "enum": ["node", "python", "rust", "go", "custom"],
+      "description": "Target project primary framework"
+    },
+    "base_branch": {
+      "type": "string",
+      "default": "main",
+      "description": "Default base branch to fork and PR against"
+    },
+    "verify_command": {
+      "type": "string",
+      "description": "Shell command to execute build & test verification"
+    },
+    "build_command": {
+      "type": "string",
+      "description": "Optional compilation/build step before tests"
+    },
+    "package_manager": {
+      "type": "string",
+      "description": "Package manager used (npm, pnpm, yarn, bun, pip, poetry, uv, cargo, go)"
+    },
+    "exclude_skills": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of global skill names to exclude from this project worktree"
+    },
+    "github_user": {
+      "type": "string",
+      "description": "Optional GitHub username override for PR operations"
+    },
+    "git_email": {
+      "type": "string",
+      "description": "Optional git author email override"
+    },
+    "memory_tier": {
+      "type": "string",
+      "enum": ["global", "local", "dual"],
+      "default": "global",
+      "description": "Memory tiering mode for project runs"
+    }
+  },
+  "additionalProperties": false
+}
