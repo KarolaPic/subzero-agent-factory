@@ -132,14 +132,14 @@ gh secret set GROK_WEBHOOK_URL
 gh secret set GROK_WEBHOOK_AUTH
 ```
 
-If either `GROK_WEBHOOK_URL` or `GROK_WEBHOOK_AUTH` is not configured when an issue is labeled with `agent`, `.github/workflows/notify-grok.yml` logs a `::notice::` annotation and exits `0` without failing workflow runs.
+> [!NOTE]
+> **Optional Grok Bot Dispatch**: Configuring these secrets is completely optional. If you run the factory locally using `$orchestrate` in T3 Code or Cursor, you do not need Grok Bot secrets. If either `GROK_WEBHOOK_URL` or `GROK_WEBHOOK_AUTH` is not configured when an issue is labeled with `agent`, `.github/workflows/notify-grok.yml` logs a `::notice::` annotation and exits `0` without failing workflow runs. Furthermore, if an external webhook server returns an HTTP 4xx or 5xx, the workflow emits a clean `::warning::` rather than failing the GitHub Action run.
 
-### Test the Grok webhook
+### Test the Grok webhook (Optional)
 1. Make sure the repo secrets `GROK_WEBHOOK_URL` and `GROK_WEBHOOK_AUTH` are set.
-2. Create a test issue with the `agent` label plus one more label (for example `documentation`).
-3. In the Actions tab, check that `notify-grok` ran exactly once for that issue (one run, triggered by the `agent` label).
+2. Create a test issue and manually attach the `agent` label.
+3. In the Actions tab, check that `notify-grok` ran cleanly.
 4. Check that Grok Bot received one webhook whose payload has `idempotency_key` equal to `<owner>/<repo>#<issue number>` and includes the `.models` object.
-5. If you see two runs or two webhooks for the same issue, the duplicate-webhook fix is missing: compare `notify-grok.yml` with the template.
 
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: Feature Request
-description: Propose a new user-facing feature or enhancement (add the `agent` label when ready for autonomous execution)
+description: Propose a new user-facing feature or enhancement (run with `$orchestrate` or add `agent` label for Grok Bot)
 title: "feat: <short summary>"
 labels: ["feature"]
 ---

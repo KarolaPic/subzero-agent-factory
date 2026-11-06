@@ -59,8 +59,8 @@ Inside any working repository derived from this template (or from a template che
 ## Workflow Overview
 
 1. **Intake & Dispatch Routing (`agent`, `bug`, `epic` labels)**:
-   - Only GitHub Issues or Linear Issues labeled with **`agent`** are ingested. Everything else is ignored.
-   - [`.github/workflows/notify-grok.yml`](.github/workflows/notify-grok.yml) triggers on `issues` (`types: [labeled]`) when `github.event.label.name == 'agent'` and passes the full event payload enriched with explicit top-level `labels`, a stable `idempotency_key` (`<repo>#<issue>`), and `delivery_id` to `GROK_WEBHOOK_URL` (with `Authorization: $GROK_WEBHOOK_AUTH`).
+   - **Local / Manual Execution**: You can run any issue or initiative directly inside T3 Code / Cursor via **`$orchestrate`** without needing external webhooks or bots.
+   - **Optional Grok Bot Dispatch**: When using an external Grok Bot queue listener, label an issue with **`agent`**. [`.github/workflows/notify-grok.yml`](.github/workflows/notify-grok.yml) triggers on `issues` (`types: [labeled]`) when `github.event.label.name == 'agent'` and passes the full event payload to `GROK_WEBHOOK_URL`. If secrets are absent or the webhook returns a 4xx/5xx error, it emits a non-fatal warning so CI remains green.
    - **Double-Fire Prevention**: Triggering strictly on `labeled` for `agent` eliminates duplicate webhook runs when issues are created with initial template labels. Concurrency per issue (`cancel-in-progress: false`) ensures reliable sequential delivery.
    - **Skill Routing Matrix & Precedence**:
      - **`epic` + `agent`** -> **[`plan-epic`](.agents/skills/plan-epic/SKILL.md)** (or **`$orchestrate plan`**): Planning-only flow that decomposes an epic into vertical tracer-bullet sub-issues. Every created sub-issue MUST have `agent`; exactly one final sub-issue receives `deploy`. Label existence is verified before ending. `epic` takes precedence over all other labels. Epics stay planning-only (no build).

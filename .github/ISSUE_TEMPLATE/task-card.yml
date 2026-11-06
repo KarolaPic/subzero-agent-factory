@@ -1,14 +1,15 @@
 name: Task Card
-description: Propose an autonomous task with Goal, Done when, and Don't touch boundaries
+description: Propose an autonomous task with Goal, Done when, and Don't touch boundaries (add `agent` label for external Grok Bot dispatch)
 title: "feat: <short summary>"
-labels: ["agent", "feature"]
+labels: ["feature"]
 body:
   - type: markdown
     attributes:
       value: |
-        ### Grok Bot Agent Factory — Task Card Ingestion
+        ### Subzero Agent Factory — Task Card Ingestion
         Every task card requires three mandatory sections: **Goal**, **Done when**, and **Don't touch**.
-        The autonomous agent verifies these boundaries before starting the plan.
+        - To execute with local agent orchestration: run `$orchestrate` in T3 Code / Cursor.
+        - To dispatch to an external Grok Bot: add the `agent` label.
   - type: textarea
     id: goal
     attributes:
