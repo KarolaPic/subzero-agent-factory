@@ -19,25 +19,40 @@ from pathlib import Path
 from typing import Any, Dict, Generator, List, Optional
 
 
+DEFAULT_GLOBAL_MEMORY_DIR = Path(
+    os.environ.get("FACTORY_GLOBAL_MEMORY_DIR", str(Path.home() / ".factory" / "memory"))
+).resolve()
+
+
 class MemoryStoreError(Exception):
     """Base exception for MemoryStore failures."""
 
 
-def resolve_memory_dir(cwd: Optional[Path] = None) -> Path:
-    """Resolves the canonical .factory/memory directory across Git worktrees."""
-    try:
-        common_dir = subprocess.check_output(
-            ["git", "rev-parse", "--git-common-dir"],
-            cwd=cwd or Path.cwd(),
-            text=True,
-            stderr=subprocess.DEVNULL,
-        ).strip()
-        common_path = (Path(cwd or Path.cwd()) / common_dir).resolve()
-        repo_root = common_path.parent
-    except Exception:
-        repo_root = Path.cwd().resolve()
+def resolve_memory_dir(
+    cwd: Optional[Path] = None,
+    tier: str = "global",
+) -> Path:
+    """Resolves the canonical memory directory (global ~/.factory/memory or project-local .factory/memory)."""
+    if tier == "local":
+        try:
+            common_dir = subprocess.check_output(
+                ["git", "rev-parse", "--git-common-dir"],
+                cwd=cwd or Path.cwd(),
+                text=True,
+                stderr=subprocess.DEVNULL,
+            ).strip()
+            common_path = (Path(cwd or Path.cwd()) / common_dir).resolve()
+            repo_root = common_path.parent
+        except Exception:
+            repo_root = Path(cwd or Path.cwd()).resolve()
 
-    mem_dir = repo_root / ".factory" / "memory"
+        mem_dir = repo_root / ".factory" / "memory"
+    else:
+        # Global memory tier: ~/.factory/memory or FACTORY_GLOBAL_MEMORY_DIR
+        mem_dir = Path(
+            os.environ.get("FACTORY_GLOBAL_MEMORY_DIR", str(Path.home() / ".factory" / "memory"))
+        ).resolve()
+
     mem_dir.mkdir(parents=True, exist_ok=True)
     return mem_dir
 
@@ -79,9 +94,10 @@ def record_lesson(
     status: str = "active",
     threshold: int = 3,
     mem_dir: Optional[Path] = None,
+    tier: str = "global",
 ) -> Dict[str, Any]:
     """Atomically appends a lesson record and updates the aggregated pattern index."""
-    memory_path = mem_dir or resolve_memory_dir()
+    memory_path = mem_dir or resolve_memory_dir(tier=tier)
     now_iso = datetime.now(timezone.utc).isoformat()
     lesson_id = f"les-{uuid.uuid4().hex[:12]}"
 
@@ -169,9 +185,12 @@ def record_lesson(
     return {"lesson": lesson_record, "pattern": entry}
 
 
-def get_ready_patterns(mem_dir: Optional[Path] = None) -> List[Dict[str, Any]]:
+def get_ready_patterns(
+    mem_dir: Optional[Path] = None,
+    tier: str = "global",
+) -> List[Dict[str, Any]]:
     """Returns all patterns where readyForRoutineMaker is true and not yet routine_synthesized."""
-    memory_path = mem_dir or resolve_memory_dir()
+    memory_path = mem_dir or resolve_memory_dir(tier=tier)
     patterns_file = memory_path / "patterns.json"
     if not patterns_file.exists():
         return []

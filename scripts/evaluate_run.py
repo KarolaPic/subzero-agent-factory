@@ -104,10 +104,20 @@ def evaluate_merged_pr(
     mem_dir: Optional[Path] = None,
     runs_dir: Optional[Path] = None,
     repo_root: Optional[Path] = None,
+    tier: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Evaluates a merged PR against factory rubrics, updates memory store, and records run log."""
     root = repo_root or Path.cwd()
-    memory_path = mem_dir or resolve_memory_dir(root)
+
+    if tier is None:
+        try:
+            from scripts.project_adapter import load_project_adapter
+            adapter = load_project_adapter(root)
+            tier = adapter.memory_tier
+        except Exception:
+            tier = "global"
+
+    memory_path = mem_dir or resolve_memory_dir(root, tier=tier)
     runs_path = runs_dir or resolve_runs_dir(root)
 
     # 1. Obtain merge diff if git is available
