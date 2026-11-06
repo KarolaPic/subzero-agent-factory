@@ -64,9 +64,9 @@ echo "📦 [2/6] Installing/updating official skills from skills-lock.json..."
 NPM_CACHE_DIR="${NPM_CONFIG_CACHE:-/tmp/grok-bot-agent-factory-npm-cache}"
 
 install_official_skills_fallback() {
-  npm_config_cache="$NPM_CACHE_DIR" npx -y skills add mattpocock/skills --skill domain-modeling grilling tdd to-spec to-tickets wayfinder -y
+  npm_config_cache="$NPM_CACHE_DIR" npx -y skills add https://github.com/mattpocock/skills/tree/59db609eb1e18aaf59b63284d0e52255aff0c63c --skill domain-modeling grilling tdd to-spec to-tickets wayfinder -y
   npm_config_cache="$NPM_CACHE_DIR" npx -y skills add https://github.com/mattpocock/skills/tree/e74f0061bb67222181640effa98c675bdb2fdaa7 --skill grill-with-docs -y
-  npm_config_cache="$NPM_CACHE_DIR" npx -y skills add https://github.com/cursor/plugins/tree/main/pstack --skill poteto-mode -y
+  npm_config_cache="$NPM_CACHE_DIR" npx -y skills add https://github.com/cursor/plugins/tree/0f77cd5dab1e006de02d6ad221d5620de026473a/pstack --skill poteto-mode -y
 }
 
 if [ -f "skills-lock.json" ]; then
