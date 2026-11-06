@@ -1,14 +1,14 @@
 ---
-description: Grok Bot Agent Factory — Multi-Model Autonomous Pipeline (High-Level Orchestrators + Matt Pocock + pstack Autopilot-full)
+description: Subzero Agent Factory (Subzero) — Multi-Model Autonomous Pipeline (High-Level Orchestrators + Matt Pocock + pstack Autopilot-full)
 alwaysApply: true
 ---
 
-# Grok Bot Agent Factory Rules
+# Subzero Agent Factory Rules (Codename: Subzero)
 
-This repository follows the **Grok Bot Agent Factory** autonomous workflow. Read `AGENTS.md` and `.factory/config.json` before acting.
+This repository follows the **Subzero Agent Factory** autonomous workflow. Read `AGENTS.md` and `.factory/config.json` before acting.
 
 ## 0. Working Repository Creation & Bootstrap (`template init`)
-- New working repositories created from this template MUST be created as **PUBLIC** (`gh repo create <name> --public --template cesarchavezcal/grok-bot-agent-factory --clone`) so GitHub Free allows branch protection (`ci` required check) and auto-merge (`allow_auto_merge`).
+- New working repositories created from this template MUST be created as **PUBLIC** (`gh repo create <name> --public --template cesarchavezcal/subzero-agent-factory --clone`) so GitHub Free allows branch protection (`ci` required check) and auto-merge (`allow_auto_merge`).
 - Run `./scripts/init.sh` (idempotent) to install/verify locked skills, create labels (`agent`, `epic`, `deploy`, `bug`, etc.), configure merge policy, and protect `main`.
 
 ## 1. Intake Gate & Skill Routing (`agent`, `bug`, `epic` Labels)

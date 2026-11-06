@@ -19,7 +19,7 @@ class TestEvaluator(unittest.TestCase):
     def test_evaluate_clean_run(self):
         clean_work_item = {
             "id": "gh-10",
-            "source": "https://github.com/cesarchavezcal/grok-bot-agent-factory/issues/10",
+            "source": "https://github.com/cesarchavezcal/subzero-agent-factory/issues/10",
             "label": "agent",
             "stage": "complete",
             "status": "complete",
@@ -42,7 +42,7 @@ class TestEvaluator(unittest.TestCase):
     def test_evaluate_rework_failure(self):
         rework_item = {
             "id": "gh-11",
-            "source": "https://github.com/cesarchavezcal/grok-bot-agent-factory/issues/11",
+            "source": "https://github.com/cesarchavezcal/subzero-agent-factory/issues/11",
             "label": "agent",
             "stage": "complete",
             "status": "complete",
@@ -73,7 +73,7 @@ class TestEvaluator(unittest.TestCase):
     def test_evaluate_reproduction_blocker(self):
         blocked_item = {
             "id": "gh-12",
-            "source": "https://github.com/cesarchavezcal/grok-bot-agent-factory/issues/12",
+            "source": "https://github.com/cesarchavezcal/subzero-agent-factory/issues/12",
             "label": "agent",
             "stage": "scouting",
             "status": "blocked",

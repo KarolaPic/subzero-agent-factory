@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/cesarchavezcal/grok-bot-agent-factory/schemas/runs/run.schema.json",
+  "$id": "https://github.com/cesarchavezcal/subzero-agent-factory/schemas/runs/run.schema.json",
   "title": "FactoryRunRecord",
   "description": "Schema for a single agent run log line appended to .factory/runs/runs.jsonl",
   "type": "object",

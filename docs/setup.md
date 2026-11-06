@@ -1,6 +1,6 @@
 # Setup & GitHub/Linear Configuration Guide
 
-This guide covers initial setup, GitHub merge policies, branch protection, secrets, labels, and template sync for working repositories created from `cesarchavezcal/grok-bot-agent-factory`.
+This guide covers initial setup, GitHub merge policies, branch protection, secrets, labels, and template sync for working repositories created from `cesarchavezcal/subzero-agent-factory`.
 
 > **Reminder (GitHub Free):** Working repositories created from this template **must be PUBLIC** (`--public`) so that GitHub Free allows required status checks (`ci`) and `allow_auto_merge`.
 
@@ -231,7 +231,7 @@ Before running autonomous merges on a new application:
 
 ## 8. Syncing Upstream Template Updates (`./scripts/sync-template.sh`)
 
-Derived working repositories can pull factory infrastructure updates from the private template (`cesarchavezcal/grok-bot-agent-factory`) at any time without touching application code:
+Derived working repositories can pull factory infrastructure updates from the private template (`cesarchavezcal/subzero-agent-factory`) at any time without touching application code:
 
 ```bash
 # Sync from `main` (default) inside a derived working repo and open a PR if managed files changed
@@ -248,7 +248,7 @@ Derived working repositories can pull factory infrastructure updates from the pr
 ```
 
 ### How It Works
-1. **Authenticated Private Fetch**: Uses `gh repo clone` (`gh` CLI authentication) to fetch `cesarchavezcal/grok-bot-agent-factory` into a temporary directory.
+1. **Authenticated Private Fetch**: Uses `gh repo clone` (`gh` CLI authentication) to fetch `cesarchavezcal/subzero-agent-factory` into a temporary directory.
 2. **First-Time Bootstrap & `--target <path>`**:
    - If the target repository does not yet have `.factory/template-sync.json` (for example, an older derived repo or an existing project adopting the factory), `sync-template.sh` fetches `.factory/template-sync.json` from the template ref via `gh` auth, uses it to drive the sync, and includes `.factory/template-sync.json` in the synced files.
    - Pass `--target <path>` to run `scripts/sync-template.sh` directly from a template checkout against any target repository; both the clean working-tree guard and the template self-guard evaluate the **target** repository rather than the script's location.

@@ -1,6 +1,6 @@
 # GitHub Pages Factory Dashboard Deployment Guide
 
-This guide describes how the static operational dashboard for **Grok Bot Agent Factory** is deployed and maintained on **GitHub Pages**.
+This guide describes how the static operational dashboard for **Subzero Agent Factory** (Codename: **Subzero**) is deployed and maintained on **GitHub Pages**.
 
 ---
 
@@ -10,7 +10,7 @@ The factory dashboard is a pure static single-page application (`plain HTML/CSS/
 
 - **Source Location**: `docs/index.html` and `docs/metrics.js`
 - **Data Source**: `.factory/runs/runs.jsonl`
-- **Hosted URL**: `https://cesarchavezcal.github.io/grok-bot-agent-factory/`
+- **Hosted URL**: `https://cesarchavezcal.github.io/subzero-agent-factory/`
 
 ---
 
@@ -23,14 +23,14 @@ The factory dashboard is a pure static single-page application (`plain HTML/CSS/
 ### Step-by-Step Manual Activation
 
 1. Navigate to the repository settings:
-   `https://github.com/cesarchavezcal/grok-bot-agent-factory/settings/pages`
+   `https://github.com/cesarchavezcal/subzero-agent-factory/settings/pages`
 2. Under **Build and deployment**:
    - **Source**: Select `Deploy from a branch`
    - **Branch**: Select `main`
    - **Folder**: Select `/docs` (default root `/` must be changed to `/docs`)
 3. Click **Save**.
 4. GitHub Pages will build and deploy within 1–2 minutes at:
-   `https://cesarchavezcal.github.io/grok-bot-agent-factory/`
+   `https://cesarchavezcal.github.io/subzero-agent-factory/`
 
 ---
 

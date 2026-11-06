@@ -1,5 +1,5 @@
 {
-  "templateRepo": "cesarchavezcal/grok-bot-agent-factory",
+  "templateRepo": "cesarchavezcal/subzero-agent-factory",
   "defaultRef": "main",
   "versionFile": ".factory/template-version",
   "managedPaths": [

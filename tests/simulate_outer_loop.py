@@ -44,7 +44,7 @@ def run_simulation():
             "id": "gh-101",
             "primarySkill": "poteto-mode",
             "retryCount": 2,
-            "prUrl": "https://github.com/cesarchavezcal/grok-bot-agent-factory/pull/101",
+            "prUrl": "https://github.com/cesarchavezcal/subzero-agent-factory/pull/101",
         }
         evaluate_work_item(
             item_1,
@@ -61,7 +61,7 @@ def run_simulation():
             "id": "gh-102",
             "primarySkill": "poteto-mode",
             "retryCount": 1,
-            "prUrl": "https://github.com/cesarchavezcal/grok-bot-agent-factory/pull/102",
+            "prUrl": "https://github.com/cesarchavezcal/subzero-agent-factory/pull/102",
         }
         evaluate_work_item(
             item_2,
@@ -78,7 +78,7 @@ def run_simulation():
             "id": "gh-103",
             "primarySkill": "poteto-mode",
             "retryCount": 1,
-            "prUrl": "https://github.com/cesarchavezcal/grok-bot-agent-factory/pull/103",
+            "prUrl": "https://github.com/cesarchavezcal/subzero-agent-factory/pull/103",
         }
         evaluate_work_item(
             item_3,

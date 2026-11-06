@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # `sync-template.sh` — Pulls managed factory files from the private template
-# repository (`cesarchavezcal/grok-bot-agent-factory`) into a derived working
+# repository (`cesarchavezcal/subzero-agent-factory`) into a derived working
 # repository, records the synced template commit SHA in `.factory/template-version`,
 # and opens a pull request if any managed files changed.
 #
@@ -17,7 +17,7 @@
 # Options:
 #   --target <path>          Target repository path to sync into (default: repo containing this script)
 #   --ref <git-ref>          Template branch, tag, or commit SHA to sync from (default: main)
-#   --repo <owner/name>      Template repository (default: from .factory/template-sync.json or cesarchavezcal/grok-bot-agent-factory)
+#   --repo <owner/name>      Template repository (default: from .factory/template-sync.json or cesarchavezcal/subzero-agent-factory)
 #   --branch <branch-name>   Branch name to create (default: chore/template-sync-<short-sha>)
 #   --base <base-branch>     Base branch in target repo (default: main)
 #   --source-dir <path>      Optional local template checkout (for testing; skips gh repo clone)
@@ -176,7 +176,7 @@ fi
       if (cfg.baseBranch) baseBranch = cfg.baseBranch;
     } catch (_) {}
   }
-  const repo = manifest.templateRepo || "cesarchavezcal/grok-bot-agent-factory";
+  const repo = manifest.templateRepo || "cesarchavezcal/subzero-agent-factory";
   const ref = manifest.defaultRef || "main";
   const ver = manifest.versionFile || ".factory/template-version";
   process.stdout.write([repo, ref, ver, baseBranch].join("\0") + "\0");

@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/cesarchavezcal/grok-bot-agent-factory/schemas/memory/patterns.schema.json",
+  "$id": "https://github.com/cesarchavezcal/subzero-agent-factory/schemas/memory/patterns.schema.json",
   "title": "FactoryPatternIndex",
   "description": "Aggregated pattern index tracking failure repetitions across skills for RoutineMaker synthesis",
   "type": "object",

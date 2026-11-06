@@ -5,7 +5,7 @@
   "autonomy": "autopilot-full",
   "repository": {
     "workingRepoVisibility": "public",
-    "templateRepo": "cesarchavezcal/grok-bot-agent-factory"
+    "templateRepo": "cesarchavezcal/subzero-agent-factory"
   },
   "intake": {
     "sources": ["github", "linear"],
