@@ -142,6 +142,45 @@ class TestSyncTemplate(unittest.TestCase):
             self.assertEqual(res2.returncode, 0)
             self.assertIn("All managed files are already up to date", res2.stdout)
 
+    def test_no_eval_in_sync_template_script(self):
+        with open(SYNC_SCRIPT, "r", encoding="utf-8") as f:
+            content = f.read()
+        self.assertNotIn('eval "$(', content)
+        self.assertNotIn("eval '", content)
+
+    def test_malicious_config_subshell_not_executed(self):
+        with tempfile.TemporaryDirectory() as target_dir:
+            subprocess.run(["git", "init", target_dir], check=True, capture_output=True)
+            subprocess.run(["git", "-C", target_dir, "config", "user.email", "test@example.com"], check=True)
+            subprocess.run(["git", "-C", target_dir, "config", "user.name", "Tester"], check=True)
+
+            os.makedirs(os.path.join(target_dir, ".factory"), exist_ok=True)
+            marker_file = os.path.join(target_dir, "pwned_marker.txt")
+            if os.path.exists(marker_file):
+                os.remove(marker_file)
+
+            malicious_config = {
+                "app": "evil-app",
+                "baseBranch": f"main$(touch {marker_file})"
+            }
+            with open(os.path.join(target_dir, ".factory", "config.json"), "w") as f:
+                json.dump(malicious_config, f)
+
+            readme = os.path.join(target_dir, "README.md")
+            with open(readme, "w") as f:
+                f.write("# Target\n")
+            subprocess.run(["git", "-C", target_dir, "add", "."], check=True)
+            subprocess.run(["git", "-C", target_dir, "commit", "-m", "init"], check=True, capture_output=True)
+
+            res = subprocess.run(
+                [SYNC_SCRIPT, "--source-dir", ROOT_DIR, "--target", target_dir, "--dry-run"],
+                capture_output=True,
+                text=True,
+            )
+            # The marker file must NOT be created by subshell injection
+            self.assertFalse(os.path.exists(marker_file), "Malicious command was executed via subshell injection!")
+
 
 if __name__ == "__main__":
     unittest.main()
+

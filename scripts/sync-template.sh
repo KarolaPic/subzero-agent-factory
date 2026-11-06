@@ -155,8 +155,13 @@ if [ -f "$MANIFEST_FILE" ]; then
   HAS_LOCAL_MANIFEST=1
 fi
 
-# Read defaults from target's .factory/template-sync.json (if present) and .factory/config.json
-eval "$(node -e '
+# Read defaults safely from target's .factory/template-sync.json (if present) and .factory/config.json
+{
+  IFS= read -r -d '' DEFAULT_TEMPLATE_REPO
+  IFS= read -r -d '' DEFAULT_REF
+  IFS= read -r -d '' VERSION_FILE
+  IFS= read -r -d '' DEFAULT_BASE_BRANCH
+} < <(node -e '
   const fs = require("fs");
   let manifest = {};
   if (fs.existsSync(".factory/template-sync.json")) {
@@ -171,11 +176,11 @@ eval "$(node -e '
       if (cfg.baseBranch) baseBranch = cfg.baseBranch;
     } catch (_) {}
   }
-  console.log("DEFAULT_TEMPLATE_REPO=" + JSON.stringify(manifest.templateRepo || "cesarchavezcal/grok-bot-agent-factory"));
-  console.log("DEFAULT_REF=" + JSON.stringify(manifest.defaultRef || "main"));
-  console.log("VERSION_FILE=" + JSON.stringify(manifest.versionFile || ".factory/template-version"));
-  console.log("DEFAULT_BASE_BRANCH=" + JSON.stringify(baseBranch));
-')"
+  const repo = manifest.templateRepo || "cesarchavezcal/grok-bot-agent-factory";
+  const ref = manifest.defaultRef || "main";
+  const ver = manifest.versionFile || ".factory/template-version";
+  process.stdout.write([repo, ref, ver, baseBranch].join("\0") + "\0");
+')
 
 TEMPLATE_REPO="${TEMPLATE_REPO:-$DEFAULT_TEMPLATE_REPO}"
 TARGET_REF="${TARGET_REF:-$DEFAULT_REF}"
