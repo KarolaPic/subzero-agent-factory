@@ -36,12 +36,24 @@ jobs:
           IDEMPOTENCY_KEY="${{ github.repository }}#${{ github.event.issue.number }}"
           DELIVERY_ID="${{ github.event.issue.number }}-${RUN_ID}-${RUN_ATTEMPT}"
           MODELS_JSON="$(python3 -c "import yaml, json; print(json.dumps(yaml.safe_load(open('models.yml'))))")"
-          jq --arg idempotency_key "$IDEMPOTENCY_KEY" \
+          PAYLOAD="$(jq --arg idempotency_key "$IDEMPOTENCY_KEY" \
              --arg delivery_id "$DELIVERY_ID" \
              --arg run_id "$RUN_ID" \
              --argjson models "$MODELS_JSON" \
              '.idempotency_key = $idempotency_key | .delivery_id = $delivery_id | .run_id = $run_id | .labels = [(.issue.labels // [])[].name] | .models = $models' \
-             "$GITHUB_EVENT_PATH" | curl -fsS -X POST "$URL" \
+             "$GITHUB_EVENT_PATH")"
+
+          HTTP_RESPONSE=$(printf "%s" "$PAYLOAD" | curl -s -w "\n%{http_code}" -X POST "$URL" \
             -H "Authorization: $AUTH" \
             -H "Content-Type: application/json" \
-            --data-binary @-
+            --data-binary @-)
+
+          HTTP_BODY=$(printf "%s" "$HTTP_RESPONSE" | sed '$d')
+          HTTP_STATUS=$(printf "%s" "$HTTP_RESPONSE" | tail -n 1)
+
+          if [ "$HTTP_STATUS" -ge 200 ] && [ "$HTTP_STATUS" -lt 300 ]; then
+            echo "✓ Successfully dispatched issue event to Grok Bot (HTTP $HTTP_STATUS)"
+          else
+            echo "::warning::Grok Bot webhook returned HTTP $HTTP_STATUS: $HTTP_BODY"
+            echo "Webhook dispatch did not succeed, but workflow will exit cleanly to avoid false CI failures."
+          fi

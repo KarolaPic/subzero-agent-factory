@@ -1,13 +1,14 @@
 name: Bug Report
-description: Report a bug or regression for autonomous reproduction and resolution
+description: Report a bug or regression for reproduction and resolution (add `agent` label for external Grok Bot dispatch)
 title: "fix: <short summary>"
-labels: ["bug", "agent"]
+labels: ["bug"]
 body:
   - type: markdown
     attributes:
       value: |
-        ### Grok Bot Agent Factory — Bug Ingestion
-        Submitting this form attaches the `bug` and `agent` labels, dispatching the autonomous **`fix-bug`** pipeline.
+        ### Subzero Agent Factory — Bug Ingestion
+        - To execute with local agent orchestration: run `$orchestrate bug` in T3 Code / Cursor.
+        - To dispatch to an external Grok Bot: add the `agent` label to trigger the webhook.
   - type: textarea
     id: what-happened
     attributes:

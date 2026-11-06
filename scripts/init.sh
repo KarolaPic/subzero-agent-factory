@@ -187,53 +187,51 @@ else
 fi
 
 # ------------------------------------------------------------------------------
-# 5. Check & configure Grok Bot webhook secrets (GROK_WEBHOOK_URL, GROK_WEBHOOK_AUTH)
+# 5. Check & configure optional Grok Bot webhook secrets (GROK_WEBHOOK_URL, GROK_WEBHOOK_AUTH)
 # ------------------------------------------------------------------------------
 echo ""
-echo "🔐 [5/6] Checking Grok Bot webhook secrets (GROK_WEBHOOK_URL, GROK_WEBHOOK_AUTH)..."
+echo "🔐 [5/6] Checking optional Grok Bot webhook secrets (for external webhook dispatch)..."
 
 if [ -n "$REPO_SLUG" ]; then
   EXISTING_SECRETS="$(gh secret list -R "$REPO_SLUG" --json name --jq '.[].name' 2>/dev/null || gh secret list -R "$REPO_SLUG" 2>/dev/null | awk '{print $1}' || true)"
   MISSING_SECRETS=()
 
+  HAS_SECRETS=false
   for SECRET_NAME in GROK_WEBHOOK_URL GROK_WEBHOOK_AUTH; do
     if echo "$EXISTING_SECRETS" | grep -qx "$SECRET_NAME"; then
+      HAS_SECRETS=true
       echo "  ✓ Secret $SECRET_NAME is already set on $REPO_SLUG"
     else
-      if [ -t 0 ] && [ -t 1 ]; then
-        printf "  🔑 Secret %s is missing. Set it now? [y/N]: " "$SECRET_NAME"
-        read -r REPLY || REPLY=""
-        if [[ "$REPLY" =~ ^[Yy]$ ]]; then
-          echo "     (Enter secret value for $SECRET_NAME below; input is hidden)"
-          if gh secret set "$SECRET_NAME" -R "$REPO_SLUG"; then
-            echo "  ✓ Secret $SECRET_NAME configured on $REPO_SLUG"
-          else
-            echo "  ⚠️ Could not set $SECRET_NAME right now."
-            MISSING_SECRETS+=("$SECRET_NAME")
-          fi
-        else
-          echo "  ⏭️  Skipped $SECRET_NAME"
-          MISSING_SECRETS+=("$SECRET_NAME")
-        fi
-      else
-        echo "  ℹ️  No interactive TTY available to prompt for missing secret $SECRET_NAME."
-        MISSING_SECRETS+=("$SECRET_NAME")
-      fi
+      MISSING_SECRETS+=("$SECRET_NAME")
     fi
   done
 
   if [ "${#MISSING_SECRETS[@]}" -gt 0 ]; then
-    echo ""
-    echo "  📌 REMINDER: Configure missing Grok Bot webhook secret(s) so .github/workflows/notify-grok.yml can dispatch 'agent' issues:"
-    for MISSING_NAME in "${MISSING_SECRETS[@]}"; do
-      echo "     gh secret set $MISSING_NAME -R $REPO_SLUG"
-    done
+    WANT_GROK_BOT="n"
+    if [ -t 0 ] && [ -t 1 ]; then
+      echo "  ℹ️  Grok Bot is an OPTIONAL external dispatcher. You can also run purely locally via '\$orchestrate'."
+      printf "  🤖 Do you want to configure an external Grok Bot webhook dispatcher? [y/N]: "
+      read -r REPLY || REPLY=""
+      if [[ "$REPLY" =~ ^[Yy]$ ]]; then
+        WANT_GROK_BOT="y"
+      fi
+    fi
+
+    if [ "$WANT_GROK_BOT" = "y" ]; then
+      for SECRET_NAME in "${MISSING_SECRETS[@]}"; do
+        echo "     (Enter secret value for $SECRET_NAME below; input is hidden)"
+        if gh secret set "$SECRET_NAME" -R "$REPO_SLUG"; then
+          echo "  ✓ Secret $SECRET_NAME configured on $REPO_SLUG"
+        else
+          echo "  ⚠️ Could not set $SECRET_NAME right now."
+        fi
+      done
+    else
+      echo "  ✓ Running in local factory mode (use '\$orchestrate' in T3 Code / Cursor). Grok Bot webhook is optional."
+    fi
   fi
 else
-  echo "  ⚠️ Skipping GitHub secret checks until remote 'origin' is configured."
-  echo "     Once a remote is set, configure Grok Bot webhook secrets with:"
-  echo "       gh secret set GROK_WEBHOOK_URL"
-  echo "       gh secret set GROK_WEBHOOK_AUTH"
+  echo "  ℹ️  Skipping GitHub secret checks (no remote configured yet). Local mode '\$orchestrate' ready."
 fi
 
 # ------------------------------------------------------------------------------

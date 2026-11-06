@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Make Grok Bot webhook dispatch optional and decouple default agent label from issue templates ([#126](https://github.com/cesarchavezcal/subzero-agent-factory/issues/126)).
 - Rebrand and rename template repository to subzero-agent-factory (Codename: Subzero) ([#124](https://github.com/cesarchavezcal/subzero-agent-factory/issues/124)).
 - Install Impeccable UI/UX skill and automate changelog updates on PR merge in $orchestrate ([#122](https://github.com/cesarchavezcal/grok-bot-agent-factory/issues/122), [#123](https://github.com/cesarchavezcal/grok-bot-agent-factory/pull/123)).
 - Adopted [Conventional Branch](https://conventionalbranch.org/) specification (`scripts/validate_conventions.py`), establishing `<type>/<issue>-<description>` branch naming alongside Conventional Commits and standardized PR titles ([#94](https://github.com/cesarchavezcal/grok-bot-agent-factory/issues/94)).

@@ -24,7 +24,6 @@ class TestIssueTemplates(unittest.TestCase):
 
         self.assertIsInstance(data, dict)
         self.assertEqual(data.get("name"), "Task Card")
-        self.assertIn("agent", data.get("labels", []))
         self.assertIn("feature", data.get("labels", []))
 
         body = data.get("body", [])
@@ -53,7 +52,6 @@ class TestIssueTemplates(unittest.TestCase):
         self.assertIsInstance(data, dict)
         self.assertEqual(data.get("name"), "Bug Report")
         self.assertIn("bug", data.get("labels", []))
-        self.assertIn("agent", data.get("labels", []))
 
         body = data.get("body", [])
         field_ids = {item.get("id"): item for item in body if isinstance(item, dict) and "id" in item}
