@@ -375,17 +375,60 @@
             const prText = r.pr ? '#' + r.pr : '—';
             const resultClass = r.result === 'merged' ? 'pill-merged' : (r.result === 'blocked' ? 'pill-blocked' : 'pill-failed');
 
-            tr.innerHTML = `
-              <td><strong>${issueText}</strong></td>
-              <td>${prText}</td>
-              <td><span class="pill ${resultClass}">${r.result}</span></td>
-              <td><code>${r.builder}</code></td>
-              <td><code>${r.auditor}</code></td>
-              <td>${r.interventions}</td>
-              <td>${window.DashboardMetrics.formatDuration(r.kickoffToPrSec)}</td>
-              <td>${window.DashboardMetrics.formatDuration(r.prToReviewSec)}</td>
-              <td>${window.DashboardMetrics.formatDuration(r.reviewToMergeSec)}</td>
-            `;
+            // Cell 1: Issue
+            const tdIssue = document.createElement('td');
+            const strongIssue = document.createElement('strong');
+            strongIssue.textContent = issueText;
+            tdIssue.appendChild(strongIssue);
+            tr.appendChild(tdIssue);
+
+            // Cell 2: PR
+            const tdPr = document.createElement('td');
+            tdPr.textContent = prText;
+            tr.appendChild(tdPr);
+
+            // Cell 3: Result
+            const tdResult = document.createElement('td');
+            const spanResult = document.createElement('span');
+            spanResult.className = 'pill ' + resultClass;
+            spanResult.textContent = r.result || '';
+            tdResult.appendChild(spanResult);
+            tr.appendChild(tdResult);
+
+            // Cell 4: Builder
+            const tdBuilder = document.createElement('td');
+            const codeBuilder = document.createElement('code');
+            codeBuilder.textContent = r.builder || '';
+            tdBuilder.appendChild(codeBuilder);
+            tr.appendChild(tdBuilder);
+
+            // Cell 5: Auditor
+            const tdAuditor = document.createElement('td');
+            const codeAuditor = document.createElement('code');
+            codeAuditor.textContent = r.auditor || '';
+            tdAuditor.appendChild(codeAuditor);
+            tr.appendChild(tdAuditor);
+
+            // Cell 6: Interventions
+            const tdInterventions = document.createElement('td');
+            tdInterventions.textContent = String(r.interventions !== undefined && r.interventions !== null ? r.interventions : 0);
+            tr.appendChild(tdInterventions);
+
+            // Cell 7: Kickoff -> PR
+            const tdKickoff = document.createElement('td');
+            tdKickoff.textContent = window.DashboardMetrics.formatDuration(r.kickoffToPrSec);
+            tr.appendChild(tdKickoff);
+
+            // Cell 8: PR -> Review
+            const tdReview = document.createElement('td');
+            tdReview.textContent = window.DashboardMetrics.formatDuration(r.prToReviewSec);
+            tr.appendChild(tdReview);
+
+            // Cell 9: Review -> Merge
+            const tdMerge = document.createElement('td');
+            tdMerge.textContent = window.DashboardMetrics.formatDuration(r.reviewToMergeSec);
+            tr.appendChild(tdMerge);
+
             tbody.appendChild(tr);
           });
         }
