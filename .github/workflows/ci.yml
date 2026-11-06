@@ -127,9 +127,12 @@ jobs:
 
       - name: Validate Conventional Branch & PR Title
         if: github.event_name == 'pull_request'
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
         run: |
-          python3 scripts/validate_conventions.py branch "${{ github.head_ref }}"
-          python3 scripts/validate_conventions.py pr-title "${{ github.event.pull_request.title }}"
+          python3 scripts/validate_conventions.py branch "$HEAD_REF"
+          python3 scripts/validate_conventions.py pr-title "$PR_TITLE"
 
       - name: Run Factory Python unit tests
         run: |
