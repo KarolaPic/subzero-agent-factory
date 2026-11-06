@@ -104,8 +104,14 @@ High-level orchestrator skill designed for autonomous feature tickets and issue-
    - Every commit, push, and PR must use the GitHub account `cesarchavezcal`.
    - Run `gh auth status` first before any push or `gh` command. If the active account is not `cesarchavezcal`, remember the previous active account, switch using `gh auth switch --user cesarchavezcal`, and switch back to the earlier account when done.
    - Maintain the git email `cesarchavezcal@gmail.com` via `includeIf`, and never change the global git email.
-2. **Branch & PR**:
+2. **Branch, Changelog & PR**:
    - Create a branch off `main` conforming to Conventional Branch ([`conventionalbranch.org`](https://conventionalbranch.org/)): `feat/<issue-number>-<slug>` (or `chore/`, `docs/`, `refactor/` as appropriate).
+   - **Automated Changelog Rule (`scripts/update_changelog.py`)**:
+     - Before committing, record the change under `## [Unreleased]` in `CHANGELOG.md`:
+       ```bash
+       python3 scripts/update_changelog.py --summary "<Summary>" --type feat --issue <ISSUE_NUMBER>
+       ```
+     - Including the changelog update in the PR branch ensures it is reviewed by the auditor / reviewer agent, validated by CI, and atomically squash-merged onto `main`.
    - Commit changes following Conventional Commits ([`conventionalcommits.org`](https://www.conventionalcommits.org/)): `<type>(<scope>): <summary> (#<issue>)` as `cesarchavezcal` (`cesarchavezcal@gmail.com`).
    - Open a PR targeting `main` with title conforming to Conventional Commits.
    - **T3 PR Scoring Rule (`scripts/score_pr.py`)**:

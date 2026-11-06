@@ -18,9 +18,9 @@ $orchestrate <subcommand> [args]
 | Invocations | Target Intent | Delegated Skill | Core Discipline |
 | :--- | :--- | :--- | :--- |
 | **`$orchestrate plan <#N \| request>`** | **Planning Only (Initiative)** | [`plan-epic`](../plan-epic/SKILL.md) | Decomposes epic into vertical tracer-bullet sub-issues. Verifies `agent` on 100% and `deploy` on final. **Zero implementation code**. |
-| **`$orchestrate bug <#N \| request>`** | **Defect Repair (Single)** | [`fix-bug`](../fix-bug/SKILL.md) | Reproduction-first hard gate (`ce-debug` causal chain) -> TDD failing test -> root cause fix -> verification -> Grok audit -> squash merge. |
-| **`$orchestrate code <#N \| request>`** | **Feature Ticket (Single)** | [`implement-ticket`](../implement-ticket/SKILL.md) | Plan-then-build in thread (`wayfinder` + `grill-with-docs`) -> `poteto-mode` TDD build -> Grok audit -> reviewer agent approval -> squash merge. |
-| **`$orchestrate <#N \| request>`**<br>*(Default with no subcommand)* | **Full Autonomous Initiative** | [`run-epic`](../run-epic/SKILL.md) | End-to-end loop: discovers/creates issue, auto-decomposes, iteratively executes each slice in dependency order, handles gates, deploys on final. |
+| **`$orchestrate bug <#N \| request>`** | **Defect Repair (Single)** | [`fix-bug`](../fix-bug/SKILL.md) | Reproduction-first hard gate (`ce-debug` causal chain) -> TDD failing test -> root cause fix -> changelog entry (`scripts/update_changelog.py`) -> verification -> Grok audit -> squash merge. |
+| **`$orchestrate code <#N \| request>`** | **Feature Ticket (Single)** | [`implement-ticket`](../implement-ticket/SKILL.md) | Plan-then-build in thread (`wayfinder` + `grill-with-docs`) -> `poteto-mode` TDD build -> changelog entry (`scripts/update_changelog.py`) -> Grok audit -> reviewer agent approval -> squash merge. |
+| **`$orchestrate <#N \| request>`**<br>*(Default with no subcommand)* | **Full Autonomous Initiative** | [`run-epic`](../run-epic/SKILL.md) | End-to-end loop: discovers/creates issue, auto-decomposes, iteratively executes each slice in dependency order, handles changelog updates, gates, deploys on final. |
 
 ---
 

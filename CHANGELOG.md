@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Install Impeccable UI/UX skill and automate changelog updates on PR merge in $orchestrate ([#122](https://github.com/cesarchavezcal/grok-bot-agent-factory/issues/122)).
 - Adopted [Conventional Branch](https://conventionalbranch.org/) specification (`scripts/validate_conventions.py`), establishing `<type>/<issue>-<description>` branch naming alongside Conventional Commits and standardized PR titles ([#94](https://github.com/cesarchavezcal/grok-bot-agent-factory/issues/94)).
 - Added test suite `tests/test_conventional_branch.py` verifying branch prefixes, character rules, commit formatting, and PR titles.
 - Enforced branch and PR title validation in `.github/workflows/ci.yml`.
