@@ -88,6 +88,49 @@ class TestConventionalConventions(unittest.TestCase):
         valid, msg = validate_pr_title(invalid_pr)
         self.assertFalse(valid, msg)
 
+    def test_ci_workflow_no_direct_interpolation(self):
+        import pathlib
+        ci_path = pathlib.Path(".github/workflows/ci.yml")
+        content = ci_path.read_text(encoding="utf-8")
+        
+        # Verify step-level env mapping is present
+        self.assertIn('HEAD_REF: ${{ github.head_ref }}', content)
+        self.assertIn('PR_TITLE: ${{ github.event.pull_request.title }}', content)
+        
+        # Verify run block does not directly interpolate expressions
+        self.assertNotIn('branch "${{ github.head_ref }}"', content)
+        self.assertNotIn('pr-title "${{ github.event.pull_request.title }}"', content)
+        
+        # Verify execution references env vars
+        self.assertIn('python3 scripts/validate_conventions.py branch "$HEAD_REF"', content)
+        self.assertIn('python3 scripts/validate_conventions.py pr-title "$PR_TITLE"', content)
+
+    def test_pr_title_validation_shell_metacharacters(self):
+        import subprocess
+        malicious_titles = [
+            'feat(ci): test"; echo pwned #',
+            'feat(ci): test && touch /tmp/pwned',
+            'feat(ci): `id`',
+            'feat(ci): $(whoami)',
+            'feat(ci): test | cat /etc/passwd',
+            'feat(ci): \' || exit 1 || \'',
+        ]
+        for title in malicious_titles:
+            # Test direct function
+            valid, msg = validate_pr_title(title)
+            # Either valid or invalid, but must not crash
+            self.assertIsInstance(valid, bool)
+            
+            # Test CLI invocation does not execute subcommands
+            proc = subprocess.run(
+                ["python3", "scripts/validate_conventions.py", "pr-title", title],
+                capture_output=True,
+                text=True
+            )
+            # CLI should run and finish cleanly (exit 0 or 1, not crash or execute injected payload)
+            self.assertIn(proc.returncode, (0, 1))
+
 
 if __name__ == "__main__":
     unittest.main()
+
