@@ -55,7 +55,7 @@ class TestClassifyPRRisk(unittest.TestCase):
 
     def test_small_code_fix_under_50_lines_is_low_risk(self):
         stats = [
-            {'path': 'scripts/evaluator.py', 'additions': 12, 'deletions': 8},
+            {'path': 'src/calculator.py', 'additions': 12, 'deletions': 8},
         ]
         res = classify_pr_risk.classify_file_stats(stats)
         self.assertEqual(res['classification'], 'low-risk')
@@ -65,7 +65,7 @@ class TestClassifyPRRisk(unittest.TestCase):
 
     def test_code_fix_at_50_lines_is_normal_risk(self):
         stats = [
-            {'path': 'scripts/evaluator.py', 'additions': 30, 'deletions': 20},
+            {'path': 'src/calculator.py', 'additions': 30, 'deletions': 20},
         ]
         res = classify_pr_risk.classify_file_stats(stats)
         self.assertEqual(res['classification'], 'normal')
@@ -78,7 +78,7 @@ class TestClassifyPRRisk(unittest.TestCase):
 
     def test_code_fix_exceeding_50_lines_is_normal_risk(self):
         stats = [
-            {'path': 'scripts/evaluator.py', 'additions': 45, 'deletions': 15},
+            {'path': 'src/calculator.py', 'additions': 45, 'deletions': 15},
         ]
         res = classify_pr_risk.classify_file_stats(stats)
         self.assertEqual(res['classification'], 'normal')
@@ -92,7 +92,7 @@ class TestClassifyPRRisk(unittest.TestCase):
     def test_mixed_docs_and_code_under_50_lines_is_low_risk(self):
         stats = [
             {'path': 'docs/setup.md', 'additions': 5, 'deletions': 2},
-            {'path': 'scripts/evaluator.py', 'additions': 10, 'deletions': 5},
+            {'path': 'src/calculator.py', 'additions': 10, 'deletions': 5},
         ]
         res = classify_pr_risk.classify_file_stats(stats)
         self.assertEqual(res['classification'], 'low-risk')
@@ -102,7 +102,7 @@ class TestClassifyPRRisk(unittest.TestCase):
     def test_mixed_docs_and_code_over_50_lines_is_normal_risk(self):
         stats = [
             {'path': 'docs/setup.md', 'additions': 35, 'deletions': 10},
-            {'path': 'scripts/evaluator.py', 'additions': 10, 'deletions': 10},
+            {'path': 'src/calculator.py', 'additions': 10, 'deletions': 10},
         ]
         res = classify_pr_risk.classify_file_stats(stats)
         self.assertEqual(res['classification'], 'normal')
@@ -223,6 +223,18 @@ class TestClassifyPRRisk(unittest.TestCase):
         self.assertEqual(res_agents['classification'], 'high-risk')
         self.assertTrue(res_agents['is_high_risk'])
 
+    def test_scripts_modification_under_50_lines_is_high_risk(self):
+        stats = [
+            {'path': 'scripts/evaluator.py', 'additions': 5, 'deletions': 2},
+        ]
+        res = classify_pr_risk.classify_file_stats(stats)
+        self.assertEqual(res['classification'], 'high-risk')
+        self.assertEqual(res['risk_tier'], 'high-risk')
+        self.assertTrue(res['is_high_risk'])
+        self.assertTrue(res['requires_cesar'])
+        self.assertEqual(res['routes_to'], 'cesar')
+        self.assertTrue(any('script' in r.lower() for r in res['reasons']))
+
     def test_parse_numstat(self):
         numstat_text = "\n".join(["10\t5\tscripts/evaluator.py", "20\t0\tREADME.md", "-\t-\tbinary_file.png"]) + "\n"
         parsed = classify_pr_risk.parse_numstat(numstat_text)
@@ -262,7 +274,7 @@ class TestClassifyPRRisk(unittest.TestCase):
         self.assertIn('Eligible for auto-merge', reason)
 
     def test_can_auto_merge_normal_risk_requires_reviewer(self):
-        stats = [{'path': 'scripts/evaluator.py', 'additions': 40, 'deletions': 20}]
+        stats = [{'path': 'src/calculator.py', 'additions': 40, 'deletions': 20}]
         # Without reviewer approval
         allowed, reason = classify_pr_risk.can_auto_merge(stats, ci_passed=True, reviewer_approved=False)
         self.assertFalse(allowed)
