@@ -35,6 +35,29 @@ The External Core Factory allows you to orchestrate autonomous agent lifecycles 
 
 ---
 
+## 1.1 Project Scaffolding Wizard (`$orchestrate new` / `scaffold_project.py`)
+
+To quickly initialize external projects that are immediately factory-ready, run the scaffolding wizard:
+
+### Via Agent Chat
+```text
+$orchestrate new verce-mvp
+```
+The agent guides you through project purpose, suggests a framework (Next.js, Expo, Vite, Python, Rust, Go), installs `find-skills` into the project source, creates `.factory.yml`, and sets up the GitHub remote.
+
+### Via CLI Tool
+```bash
+python3 scripts/scaffold_project.py \
+  --name verce-mvp \
+  --framework nextjs \
+  --purpose "Interactive customer billing MVP" \
+  --github \
+  --public \
+  --webhook-url https://factory.example.com/webhook
+```
+
+---
+
 ## 2. CLI Runner (`factory_runner.py`)
 
 The primary execution vehicle is the CLI runner. It creates isolated worktrees under `~/.factory/worktrees/<repo-slug>/<issue-id>` and handles POSIX trap cleanup automatically:
