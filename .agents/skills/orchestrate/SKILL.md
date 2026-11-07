@@ -20,6 +20,7 @@ $orchestrate <subcommand> [args]
 | **`$orchestrate plan <#N \| request>`** | **Planning Only (Initiative)** | [`plan-epic`](../plan-epic/SKILL.md) | Decomposes epic into vertical tracer-bullet sub-issues. Verifies `agent` on 100% and `deploy` on final. **Zero implementation code**. |
 | **`$orchestrate bug <#N \| request>`** | **Defect Repair (Single)** | [`fix-bug`](../fix-bug/SKILL.md) | Reproduction-first hard gate (`ce-debug` causal chain) -> TDD failing test -> root cause fix -> changelog entry (`scripts/update_changelog.py`) -> verification -> Grok audit -> squash merge. |
 | **`$orchestrate code <#N \| request>`** | **Feature Ticket (Single)** | [`implement-ticket`](../implement-ticket/SKILL.md) | Plan-then-build in thread (`wayfinder` + `grill-with-docs`) -> `poteto-mode` TDD build -> changelog entry (`scripts/update_changelog.py`) -> Grok audit -> reviewer agent approval -> squash merge. |
+| **`$orchestrate new [<project-name>]`** | **External Project Wizard** | [`scaffold-project`](../scaffold-project/SKILL.md) | Interactive intake -> framework suggestion -> project-source skill install (`find-skills`) -> `.factory.yml` generation -> GitHub remote bootstrap (`gh repo create --public`). |
 | **`$orchestrate <#N \| request>`**<br>*(Default with no subcommand)* | **Full Autonomous Initiative** | [`run-epic`](../run-epic/SKILL.md) | End-to-end loop: discovers/creates issue, auto-decomposes, iteratively executes each slice in dependency order, handles changelog updates, gates, deploys on final. |
 
 ---
@@ -54,7 +55,16 @@ Use when building a single discrete feature or task.
   - Follows `poteto-mode` `autopilot-full` with TDD.
   - Autonomous Reviewer Agent gate (`scripts/review_pr.py`) + 3-tier risk policy (`scripts/classify_pr_risk.py`).
 
-### 4. Default Mode: `$orchestrate <#N | query>`
+### 4. External Project Wizard: `$orchestrate new [<project-name>]`
+Use when bootstrapping a new external client project connected to Subzero.
+- **Underlying Engine**: [`scaffold-project`](../scaffold-project/SKILL.md) / `scripts/scaffold_project.py`
+- **Rules**:
+  - Discovers purpose and suggests framework (Next.js, Expo, Vite, Python, Rust, Go).
+  - Installs project-local skills via `npx skills add https://github.com/vercel-labs/skills --skill find-skills` in target project source.
+  - Generates `.factory.yml` matching framework test commands.
+  - Bootstraps public GitHub repo with labels and optional webhook wiring.
+
+### 5. Default Mode: `$orchestrate <#N | query>`
 Use when you want full autonomous execution of an entire epic or multi-step initiative from a single prompt.
 - **Underlying Engine**: [`run-epic`](../run-epic/SKILL.md)
 - **Rules**:
@@ -72,4 +82,6 @@ To preserve existing muscle memory and automated scripts, the legacy top-level s
 - `$plan-epic ...` $\to$ `$orchestrate plan ...`
 - `$fix-bug ...` $\to$ `$orchestrate bug ...`
 - `$implement-ticket ...` $\to$ `$orchestrate code ...`
+- `$scaffold ...` $\to$ `$orchestrate new ...`
 - `$run-epic ...` $\to$ `$orchestrate ...`
+
