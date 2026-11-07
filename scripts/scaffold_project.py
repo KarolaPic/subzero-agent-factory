@@ -2,7 +2,8 @@
 """Project Scaffolding Engine for External Projects.
 
 Scaffolds external projects using official framework CLIs, installs project-source
-skills via `npx skills add`, and generates a validated .factory.yml adapter config.
+skills via `npx skills add`, generates a validated .factory.yml adapter config,
+and bootstraps public GitHub remotes with labels and webhooks.
 """
 
 from __future__ import annotations
@@ -18,10 +19,13 @@ import sys
 from typing import Any, Dict, List, Optional
 import yaml
 
+from scripts.git_identity import governed_identity
 from scripts.project_adapter import validate_adapter_config
 
 logger = logging.getLogger("scaffold_project")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+
+ROOT_DIR = Path(__file__).resolve().parent.parent
 
 # Supported official framework CLIs and default verify/build configs
 FRAMEWORK_TEMPLATES: Dict[str, Dict[str, Any]] = {
@@ -81,7 +85,6 @@ def generate_factory_config(
     memory_tier: str = "global",
 ) -> Dict[str, Any]:
     """Generates and validates .factory.yml dictionary matching adapter schema."""
-    # Map friendly framework string to schema enum ["node", "python", "rust", "go", "custom"]
     meta = FRAMEWORK_TEMPLATES.get(framework, {})
     schema_framework = meta.get("framework", framework if framework in ("node", "python", "rust", "go", "custom") else "custom")
 
@@ -100,7 +103,6 @@ def generate_factory_config(
     if exclude_skills:
         cfg["exclude_skills"] = exclude_skills
 
-    # Validate against factory-adapter.schema.json
     validate_adapter_config(cfg)
     return cfg
 
@@ -120,7 +122,6 @@ def install_project_skills(
         return {"success": True, "installed": target_skills, "dry_run": True}
 
     for skill in target_skills:
-        # Default skills repository for find-skills
         repo_url = "https://github.com/vercel-labs/skills" if skill == "find-skills" else skill
         cmd = ["npx", "--yes", "skills", "add", repo_url, "--skill", skill]
         logger.info("Installing skill '%s' into %s: %s", skill, path, " ".join(cmd))
@@ -142,15 +143,128 @@ def install_project_skills(
     return {"success": True, "installed": installed, "dry_run": False}
 
 
+def bootstrap_github_repository(
+    repo_name: str,
+    project_path: Path | str,
+    public: bool = True,
+    dry_run: bool = False,
+) -> Dict[str, Any]:
+    """Creates a remote repository on GitHub via `gh repo create` and pushes initial code."""
+    path = Path(project_path).resolve()
+    visibility_flag = "--public" if public else "--private"
+
+    if dry_run:
+        logger.info("[dry-run] Would create GitHub repo '%s' (%s) from %s", repo_name, visibility_flag, path)
+        return {"success": True, "repo_name": repo_name, "dry_run": True}
+
+    with governed_identity():
+        # Ensure git repo is initialized locally
+        subprocess.run(["git", "init", "-b", "main"], cwd=str(path), check=False)
+        subprocess.run(["git", "add", "."], cwd=str(path), check=False)
+        subprocess.run(["git", "commit", "-m", "chore: initial project scaffold"], cwd=str(path), check=False)
+
+        cmd = [
+            "gh", "repo", "create",
+            repo_name,
+            visibility_flag,
+            "--source", str(path),
+            "--push",
+        ]
+        logger.info("Creating GitHub repository: %s", " ".join(cmd))
+        res = subprocess.run(cmd, cwd=str(path), capture_output=True, text=True, check=False)
+        if res.returncode != 0:
+            logger.error("gh repo create failed: %s", res.stderr.strip())
+            return {"success": False, "error": res.stderr.strip()}
+
+        repo_url = res.stdout.strip()
+        return {"success": True, "repo_name": repo_name, "repo_url": repo_url, "dry_run": False}
+
+
+def provision_project_labels(repo_slug: str, dry_run: bool = False) -> Dict[str, Any]:
+    """Runs scripts/setup-labels.sh against target external repository."""
+    if dry_run:
+        logger.info("[dry-run] Would setup labels on %s", repo_slug)
+        return {"success": True, "repo_slug": repo_slug, "dry_run": True}
+
+    script_path = ROOT_DIR / "scripts" / "setup-labels.sh"
+    env = os.environ.copy()
+    env["GH_REPO"] = repo_slug
+
+    logger.info("Provisioning factory labels on %s", repo_slug)
+    res = subprocess.run(
+        [str(script_path)],
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if res.returncode != 0:
+        logger.warning("setup-labels.sh returned non-zero for %s: %s", repo_slug, res.stderr)
+        return {"success": False, "error": res.stderr.strip()}
+
+    return {"success": True, "repo_slug": repo_slug, "dry_run": False}
+
+
+def configure_project_webhook(
+    repo_slug: str,
+    webhook_url: str,
+    secret: Optional[str] = None,
+    dry_run: bool = False,
+) -> Dict[str, Any]:
+    """Configures repository issue webhook pointing to Subzero factory_daemon.py."""
+    if dry_run:
+        logger.info("[dry-run] Would configure webhook %s on %s", webhook_url, repo_slug)
+        return {"success": True, "repo_slug": repo_slug, "webhook_url": webhook_url, "dry_run": True}
+
+    api_path = f"repos/{repo_slug}/hooks"
+    config_dict = {
+        "url": webhook_url,
+        "content_type": "json",
+    }
+    if secret:
+        config_dict["secret"] = secret
+
+    payload = {
+        "name": "web",
+        "active": True,
+        "events": ["issues"],
+        "config": config_dict,
+    }
+
+    cmd = [
+        "gh", "api",
+        "--method", "POST",
+        "-H", "Accept: application/vnd.github+json",
+        api_path,
+        "--input", "-",
+    ]
+    logger.info("Configuring webhook on %s pointing to %s", repo_slug, webhook_url)
+    res = subprocess.run(
+        cmd,
+        input=json.dumps(payload),
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if res.returncode != 0:
+        logger.error("Failed to configure webhook on %s: %s", repo_slug, res.stderr.strip())
+        return {"success": False, "error": res.stderr.strip()}
+
+    return {"success": True, "repo_slug": repo_slug, "webhook_url": webhook_url, "dry_run": False}
+
+
 def scaffold_framework_project(
     project_name: str,
     framework: str = "nextjs",
     destination_parent: Optional[Path | str] = None,
     purpose: Optional[str] = None,
     exclude_skills: Optional[List[str]] = None,
+    github: bool = False,
+    public: bool = True,
+    webhook_url: Optional[str] = None,
     dry_run: bool = False,
 ) -> Dict[str, Any]:
-    """Scaffolds a new external project directory using official CLIs and writes .factory.yml."""
+    """Scaffolds a new external project directory, writes .factory.yml, and optionally bootstraps remote."""
     dest_parent = Path(destination_parent or Path.cwd()).resolve()
     target_dir = dest_parent / project_name
     template = FRAMEWORK_TEMPLATES.get(framework, FRAMEWORK_TEMPLATES["nextjs"])
@@ -198,12 +312,27 @@ def scaffold_framework_project(
         # 3. Install project skills into project source
         install_project_skills(target_dir, skills=["find-skills"], dry_run=False)
 
+    remote_res: Optional[Dict[str, Any]] = None
+    if github:
+        remote_res = bootstrap_github_repository(
+            repo_name=project_name,
+            project_path=target_dir,
+            public=public,
+            dry_run=dry_run,
+        )
+        if remote_res.get("success"):
+            repo_slug = remote_res.get("repo_name", project_name)
+            provision_project_labels(repo_slug, dry_run=dry_run)
+            if webhook_url:
+                configure_project_webhook(repo_slug, webhook_url, dry_run=dry_run)
+
     return {
         "success": True,
         "project_name": project_name,
         "framework": framework,
         "project_path": str(target_dir),
         "factory_config": config_dict,
+        "github": remote_res,
         "dry_run": dry_run,
     }
 
@@ -215,6 +344,9 @@ def main() -> None:
     parser.add_argument("--dir", default=".", help="Destination parent directory")
     parser.add_argument("--purpose", help="Brief purpose of the project")
     parser.add_argument("--exclude-skills", nargs="*", help="Skills to exclude")
+    parser.add_argument("--github", action="store_true", help="Bootstrap GitHub remote repository")
+    parser.add_argument("--public", action="store_true", default=True, help="Create repository as public (default: True)")
+    parser.add_argument("--webhook-url", help="Webhook URL for factory_daemon.py")
     parser.add_argument("--dry-run", action="store_true", help="Simulate without executing")
 
     args = parser.parse_args()
@@ -224,6 +356,9 @@ def main() -> None:
         destination_parent=args.dir,
         purpose=args.purpose,
         exclude_skills=args.exclude_skills,
+        github=args.github,
+        public=args.public,
+        webhook_url=args.webhook_url,
         dry_run=args.dry_run,
     )
     print(json.dumps(res, indent=2))
