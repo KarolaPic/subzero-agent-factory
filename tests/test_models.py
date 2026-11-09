@@ -18,6 +18,10 @@ SETUP_SCRIPT = os.path.join(ROOT_DIR, "scripts", "setup-models.sh")
 
 
 class TestModelsConfig(unittest.TestCase):
+    def tearDown(self):
+        # Always restore default models after tests
+        subprocess.run([SETUP_SCRIPT, "--defaults"], check=True)
+
     def test_allowed_models_file_exists_and_valid(self):
         self.assertTrue(os.path.exists(ALLOWED_FILE), "models.allowed.yml must exist")
         allowed = get_allowed_models(ALLOWED_FILE)
@@ -25,6 +29,7 @@ class TestModelsConfig(unittest.TestCase):
         self.assertIn("gemini-3.8-flash-medium", allowed)
         self.assertIn("gemini-3.8-flash-low", allowed)
         self.assertIn("grok-4.7", allowed)
+        self.assertIn("cursor-small", allowed)
 
         for model in allowed:
             for forbidden in FORBIDDEN_PATTERNS:
@@ -43,7 +48,7 @@ class TestModelsConfig(unittest.TestCase):
         self.assertEqual(data["auditor"], "grok-4.7")
         self.assertEqual(data["planner"], "gemini-3.8-flash-high")
         self.assertEqual(data["epic_planner"], "gemini-3.8-flash-high")
-        self.assertEqual(data["subagents"], "gemini-3.8-flash-high")
+        self.assertEqual(data["subagents"], "cursor-small")
         self.assertEqual(data["scorer"], "gemini-3.8-flash-low")
         self.assertNotEqual(data["builder"], data["auditor"])
 
@@ -137,6 +142,7 @@ class TestModelsConfig(unittest.TestCase):
         data = validate_models(MODELS_FILE, ALLOWED_FILE)
         self.assertEqual(data["builder"], "gemini-3.8-flash-high")
         self.assertEqual(data["auditor"], "grok-4.7")
+        self.assertEqual(data["subagents"], "cursor-small")
         self.assertEqual(data["scorer"], "gemini-3.8-flash-low")
 
         # 2. Reject auditor == builder
@@ -168,7 +174,13 @@ class TestModelsConfig(unittest.TestCase):
 
         # 4. Custom valid models setup
         res = subprocess.run(
-            [SETUP_SCRIPT, "--builder", "gemini-3.8-flash-low", "--auditor", "grok-4.7", "--scorer", "gemini-3.8-flash-medium"],
+            [
+                SETUP_SCRIPT,
+                "--builder", "gemini-3.8-flash-low",
+                "--auditor", "grok-4.7",
+                "--subagents", "cursor-small",
+                "--scorer", "gemini-3.8-flash-medium",
+            ],
             capture_output=True,
             text=True,
         )
@@ -178,7 +190,7 @@ class TestModelsConfig(unittest.TestCase):
         self.assertEqual(custom_data["auditor"], "grok-4.7")
         self.assertEqual(custom_data["planner"], "gemini-3.8-flash-low")
         self.assertEqual(custom_data["epic_planner"], "gemini-3.8-flash-low")
-        self.assertEqual(custom_data["subagents"], "gemini-3.8-flash-low")
+        self.assertEqual(custom_data["subagents"], "cursor-small")
         self.assertEqual(custom_data["scorer"], "gemini-3.8-flash-medium")
 
         # Reset back to template defaults

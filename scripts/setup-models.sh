@@ -53,10 +53,12 @@ is_allowed() {
 # Template defaults per Decision 9
 TEMPLATE_DEFAULT_BUILDER="gemini-3.8-flash-high"
 TEMPLATE_DEFAULT_AUDITOR="grok-4.7"
+TEMPLATE_DEFAULT_SUBAGENTS="cursor-small"
 TEMPLATE_DEFAULT_SCORER="gemini-3.8-flash-low"
 
 DEFAULT_BUILDER="$TEMPLATE_DEFAULT_BUILDER"
 DEFAULT_AUDITOR="$TEMPLATE_DEFAULT_AUDITOR"
+DEFAULT_SUBAGENTS="$TEMPLATE_DEFAULT_SUBAGENTS"
 DEFAULT_SCORER="$TEMPLATE_DEFAULT_SCORER"
 CURRENT_PLANNER=""
 CURRENT_EPIC_PLANNER=""
@@ -73,6 +75,7 @@ if [ -f "$MODELS_FILE" ]; then
   CURRENT_SCORER="$(python3 -c "import yaml; print(yaml.safe_load(open('$MODELS_FILE')).get('scorer', ''))" 2>/dev/null || echo "")"
   [ -n "$CURRENT_BUILDER" ] && DEFAULT_BUILDER="$CURRENT_BUILDER"
   [ -n "$CURRENT_AUDITOR" ] && DEFAULT_AUDITOR="$CURRENT_AUDITOR"
+  [ -n "$CURRENT_SUBAGENTS" ] && DEFAULT_SUBAGENTS="$CURRENT_SUBAGENTS"
   [ -n "$CURRENT_SCORER" ] && DEFAULT_SCORER="$CURRENT_SCORER"
 fi
 
@@ -119,12 +122,12 @@ while [ $# -gt 0 ]; do
       echo "Usage: ./scripts/setup-models.sh [options]"
       echo ""
       echo "Options:"
-      echo "  --defaults                   Apply template defaults (builder: gemini-3.8-flash-high, auditor: grok-4.7, scorer: gemini-3.8-flash-low)"
+      echo "  --defaults                   Apply template defaults (builder: gemini-3.8-flash-high, auditor: grok-4.7, subagents: cursor-small, scorer: gemini-3.8-flash-low)"
       echo "  --builder <model>            Builder model"
       echo "  --auditor <model>            Auditor model (must differ from builder)"
       echo "  --planner <model>            Planner model (defaults to builder)"
       echo "  --epic-planner <model>       Epic planner model (defaults to builder)"
-      echo "  --subagents <model>          Sub-agents model (defaults to builder)"
+      echo "  --subagents <model>          Sub-agents model (defaults to cursor-small)"
       echo "  --scorer <model>             Scorer model (defaults to gemini-3.8-flash-low)"
       echo "  -h, --help                   Show this help"
       exit 0
@@ -141,7 +144,7 @@ if [ "$USE_DEFAULTS" -eq 1 ]; then
   CHOSEN_AUDITOR="$TEMPLATE_DEFAULT_AUDITOR"
   CHOSEN_PLANNER="$CHOSEN_BUILDER"
   CHOSEN_EPIC_PLANNER="$CHOSEN_BUILDER"
-  CHOSEN_SUBAGENTS="$CHOSEN_BUILDER"
+  CHOSEN_SUBAGENTS="$TEMPLATE_DEFAULT_SUBAGENTS"
   CHOSEN_SCORER="$TEMPLATE_DEFAULT_SCORER"
 fi
 
@@ -248,7 +251,7 @@ if [ -z "$CHOSEN_EPIC_PLANNER" ]; then
   CHOSEN_EPIC_PLANNER="$CHOSEN_BUILDER"
 fi
 if [ -z "$CHOSEN_SUBAGENTS" ]; then
-  CHOSEN_SUBAGENTS="$CHOSEN_BUILDER"
+  CHOSEN_SUBAGENTS="$DEFAULT_SUBAGENTS"
 fi
 if [ -z "$CHOSEN_SCORER" ]; then
   CHOSEN_SCORER="$DEFAULT_SCORER"

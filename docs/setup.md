@@ -102,6 +102,7 @@ The setup script and CI checks only permit models declared in [`models.allowed.y
 - `gemini-3.8-flash-medium`
 - `gemini-3.8-flash-high`
 - `grok-4.7`
+- `cursor-small`
 
 *(Argon, Claude, and GPT models are strictly forbidden.)*
 

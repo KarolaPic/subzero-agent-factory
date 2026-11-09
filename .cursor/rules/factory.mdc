@@ -65,7 +65,7 @@ This repository follows the **Subzero Agent Factory** autonomous workflow. Read 
   - `planner`: Architecture discovery, specification, and ticket planning.
   - `epic_planner`: Decomposition of initiative epics into vertical sub-issues.
   - `subagents`: Background subagents and auxiliary workers.
-- **Allowed Models (`models.allowed.yml`)**: Allowed options are `gemini-3.8-flash-low`, `gemini-3.8-flash-medium`, `gemini-3.8-flash-high`, and `grok-4.7`.
+- **Allowed Models (`models.allowed.yml`)**: Allowed options are `gemini-3.8-flash-low`, `gemini-3.8-flash-medium`, `gemini-3.8-flash-high`, `grok-4.7`, and `cursor-small`.
 - **Model Not Available Rule**: If a configured model is unavailable, **stop and tell the user immediately**. No fallback model, no retries.
 - **Rework Escalation**: On verification or audit failure, escalate rework using the configured `planner` or `builder` model — strictly distinct from the `auditor` — for a maximum of **2 attempts** (`maxRetries: 2`). Stop and block if still failing after 2 attempts.
 - **Invariants**: Never use Claude or GPT models (`disallowClaude: true`), never use Argon models (retired), and never require paid API keys (`strictZeroCost: true`).

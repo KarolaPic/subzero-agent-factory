@@ -104,8 +104,9 @@ The setup script and CI checks only permit models declared in [`models.allowed.y
 - `gemini-3.8-flash-medium`
 - `gemini-3.8-flash-high`
 - `grok-4.7`
+- `cursor-small`
 
-Committed defaults: `builder: gemini-3.8-flash-high`, `auditor: grok-4.7`, and `planner`, `epic_planner`, `subagents` defaulting to `gemini-3.8-flash-high`.
+Committed defaults: `builder: gemini-3.8-flash-high`, `auditor: grok-4.7`, `subagents: cursor-small`, `scorer: gemini-3.8-flash-low`, and `planner`, `epic_planner` defaulting to `gemini-3.8-flash-high`.
 
 ### Strict Invariants
 - **Auditor Must Differ from Builder**: The script refuses identical models, and CI check fails on it.
