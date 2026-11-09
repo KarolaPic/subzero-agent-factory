@@ -31,15 +31,16 @@ What [`./scripts/init.sh`](scripts/init.sh) does (idempotent, safe to re-run at 
 
 ---
 
-## 1. Intake & Routing Matrix (`agent`, `bug`, `epic` Labels)
+## 1. Intake & Routing Matrix (`agent`, `bug`, `epic`, `security` Labels)
 
 - **Entry Condition**: Only issues from **GitHub Issues** or **Linear** carrying the **`agent`** label are eligible for execution.
 - **Ignore Rule**: Any issue without the `agent` label MUST be ignored completely.
 - **Routing Matrix & Precedence**:
   - **`epic` + `agent`** -> **[`plan-epic`](.agents/skills/plan-epic/SKILL.md)**: Planning-only thread that splits an epic into vertical sub-issues (`Part of #N`). Every created sub-issue MUST receive the `agent` label; exactly one final sub-issue receives the `deploy` label. Verify all sub-issues have `agent` before completing.
     - *Precedence*: `epic` takes priority over all other labels. If an issue carries `epic` + `bug` + `agent`, it routes to `plan-epic`.
-  - **`bug` + `agent`** -> **[`fix-bug`](.agents/skills/fix-bug/SKILL.md)**: Reads issue/error/logs -> reproduces first (if it cannot reproduce, stop and ask César in thread final message) -> writes failing test -> fixes root cause (`ce-debug`, `tdd`, `principle-fix-root-causes`) -> verifies all tests + runs the app once -> Grok audit -> PR `Closes #N` -> squash merge on green CI.
-  - **`agent` alone (or with `feature`)** -> **[`implement-ticket`](.agents/skills/implement-ticket/SKILL.md)**: Full lifecycle feature delivery: plan (`grill-with-docs` + `wayfinder`) -> build (`poteto-mode` reproduce, test, fix, verify) -> Grok audit -> rework rule -> PR `Closes #N` -> squash merge on green CI.
+  - **`security` + `agent`** -> **[`audit-security`](.agents/skills/audit-security/SKILL.md)**: Dedicated security audit and vulnerability triage. Audits code, secrets, dependencies, and agent surfaces. If standalone defects exist, creates structured issues (`fix(security): ...`, labels `bug,agent,security`) without raw secrets, prompting Grok Bot to orchestrate resolution via `fix-bug`.
+  - **`bug` + `agent`** -> **[`fix-bug`](.agents/skills/fix-bug/SKILL.md)**: Reads issue/error/logs -> reproduces first (if it cannot reproduce, stop and ask César in thread final message) -> writes failing test -> fixes root cause (`ce-debug`, `tdd`, `principle-fix-root-causes`) -> verifies all tests + runs the app once -> Grok audit & security audit -> PR `Closes #N` -> squash merge on green CI.
+  - **`agent` alone (or with `feature`)** -> **[`implement-ticket`](.agents/skills/implement-ticket/SKILL.md)**: Full lifecycle feature delivery: plan (`grill-with-docs` + `wayfinder`) -> build (`poteto-mode` reproduce, test, fix, verify) -> Grok audit & security audit -> rework rule -> PR `Closes #N` -> squash merge on green CI.
 - **Manual Labeling Order (`epic` before `agent`)**:
   - When manually adding labels to an existing issue in GitHub or Linear, **always add `epic` before `agent`** so `epic` is already present on the issue payload when `agent` triggers `.github/workflows/notify-grok.yml`.
 - **Deploy Rule**:
@@ -62,8 +63,9 @@ What [`./scripts/init.sh`](scripts/init.sh) does (idempotent, safe to re-run at 
 | **Phase 3a: Build (UI / CRUD / Standard)** | [`poteto-mode`](.agents/skills/poteto-mode/SKILL.md) ([`autopilot-full`](.agents/skills/poteto-mode/playbooks/autopilot-full.md)) + [`tdd`](.agents/skills/tdd/SKILL.md) | `antigravity::gemini-3.8-flash-medium` | `AGY_FAST` |
 | **Phase 3b: Build (Backend / Complex)** | [`poteto-mode`](.agents/skills/poteto-mode/SKILL.md) ([`autopilot-full`](.agents/skills/poteto-mode/playbooks/autopilot-full.md)) + [`tdd`](.agents/skills/tdd/SKILL.md) | `grok::grok-4.7-build-fast` (`reasoningEffort: medium`) | `GROK_WORK` |
 | **Phase 4a: Runtime Verification** | [`verify-app`](.agents/skills/verify-app/SKILL.md) (`verify-<app>`) | `antigravity::gemini-3.8-flash-medium` | `AGY_FAST` |
-| **Phase 4b: Independent Audit** | Adversarial diff & spec interrogation | `grok::grok-4.7` (`reasoningEffort: high`) | `GROK_AUDIT` |
-| **Rework Escalation (max 2)** | Scoped repair from 4a/4b findings | `antigravity::gemini-3.8-flash-high` (`maxRetries: 2`) | `AGY_FAST` |
+| **Phase 4b: Independent Audit** | Adversarial diff & spec interrogation ([`interrogator-grok`](.cursor/agents/interrogator-grok.md)) | `grok::grok-4.7` (`reasoningEffort: high`) | `GROK_AUDIT` |
+| **Phase 4c: Security Audit** | [`audit-security`](.agents/skills/audit-security/SKILL.md) ([`security-auditor`](.cursor/agents/security-auditor.md)) | `grok::grok-4.7` (`reasoningEffort: high`) | `GROK_AUDIT` |
+| **Rework Escalation (max 2)** | Scoped repair from 4a/4b/4c findings | `antigravity::gemini-3.8-flash-high` (`maxRetries: 2`) | `AGY_FAST` |
 
 ### Strict Invariants
 - **Zero Paid API Keys**: Never require or read `GEMINI_API_KEY`, `XAI_API_KEY`, `CURSOR_API_KEY`, `ANTHROPIC_API_KEY`, or `OPENAI_API_KEY`. All models run through authenticated sessions.
@@ -102,8 +104,9 @@ Execution follows the official pstack [`poteto-mode`](.agents/skills/poteto-mode
      - **Green CI check (`ci`)** on the current head rebased onto `main`.
      - **Phase 4a Runtime Verification** (`antigravity::gemini-3.8-flash-medium`) running `.agents/skills/verify-app` (or `verify-<app>`) with `exitCode === 0`.
      - **Phase 4b Independent Interrogation** (`grok::grok-4.7`, `reasoningEffort: high`, [`.cursor/agents/interrogator-grok.md`](.cursor/agents/interrogator-grok.md)) auditing the diff, spec, and verification evidence (`verdict: PASS`).
+     - **Phase 4c Security Audit** (`grok::grok-4.7`, `reasoningEffort: high`, [`.cursor/agents/security-auditor.md`](.cursor/agents/security-auditor.md)) auditing AST patterns, OWASP Top 10, secrets, and supply-chain integrity (`verdict: PASS`).
 3. **Rework Escalation (Up to 2 Attempts)**:
-   - If Phase 4a or Phase 4b fails, increment `retryCount` and escalate the rework pass to **`antigravity::gemini-3.8-flash-high`** (`maxRetries: 2`).
+   - If Phase 4a, Phase 4b, or Phase 4c fails, increment `retryCount` and escalate the rework pass to **`antigravity::gemini-3.8-flash-high`** (`maxRetries: 2`).
    - If the ticket still fails after 2 rework attempts, set `status: "blocked"`, `waitingOn: "blocked"`, and stop for human intervention.
 4. **Squash Merge & Branch Preservation**:
    - Every PR body MUST use `Closes #N` (never `Refs #N`). For epics, the final deploy sub-issue PR also includes `Closes #EPIC`.

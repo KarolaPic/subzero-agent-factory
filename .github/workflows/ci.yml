@@ -28,6 +28,11 @@ jobs:
           bash -n scripts/init.sh
           test -x scripts/setup-labels.sh
           bash -n scripts/setup-labels.sh
+          test -x .agents/skills/audit-security/scripts/verify-skills-hashes.sh
+          bash -n .agents/skills/audit-security/scripts/verify-skills-hashes.sh
+          test -x .agents/skills/audit-security/scripts/scan-secrets.sh
+          bash -n .agents/skills/audit-security/scripts/scan-secrets.sh
+          .agents/skills/audit-security/scripts/verify-skills-hashes.sh
           test -f skills-lock.json
           test -f AGENTS.md
           node -e '
@@ -67,6 +72,9 @@ jobs:
             if (cfg.models?.interrogator?.model !== "grok-4.7") {
               throw new Error("models.interrogator.model must be grok-4.7");
             }
+            if (cfg.models?.securityAuditor?.model !== "grok-4.7") {
+              throw new Error("models.securityAuditor.model must be grok-4.7");
+            }
 
             // Invariant: Rework must escalate to a different provider family than the auditor
             if (cfg.models?.rework?.providerInstanceId === cfg.models?.interrogator?.providerInstanceId) {
@@ -79,7 +87,7 @@ jobs:
               throw new Error("Argon reference detected in .factory/work-item.schema.json");
             }
 
-            for (const agentFile of ["builder-flash.md", "builder-grok.md", "interrogator-grok.md"]) {
+            for (const agentFile of ["builder-flash.md", "builder-grok.md", "interrogator-grok.md", "security-auditor.md"]) {
               const content = fs.readFileSync(".cursor/agents/" + agentFile, "utf8");
               if (/argon/i.test(content)) {
                 throw new Error("Argon reference detected in .cursor/agents/" + agentFile);

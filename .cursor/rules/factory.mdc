@@ -16,8 +16,9 @@ This repository follows the **Grok Bot Agent Factory** autonomous workflow. Read
 - **Routing Matrix & Precedence**:
   - **`epic` + `agent`** -> **`plan-epic`**: Planning-only thread that decomposes an epic into vertical sub-issues (`Part of #N`). Every created sub-issue MUST get the `agent` label; exactly one final sub-issue gets the `deploy` label. Verify all sub-issues have `agent` before ending.
     - *Precedence*: `epic` takes priority over all other labels. If an issue carries `epic` + `bug` + `agent`, it routes to `plan-epic`.
-  - **`bug` + `agent`** -> **`fix-bug`**: Read issue/error/logs -> reproduce first (if it cannot reproduce, stop and ask César in thread final message) -> write a failing test -> fix the root cause (`ce-debug`, `tdd`, `principle-fix-root-causes`) -> verify all tests + run the app once -> Grok audit -> PR `Closes #N` -> squash merge on green.
-  - **`agent` alone (or with `feature`)** -> **`implement-ticket`**: Full lifecycle: plan (`grill-with-docs` + `wayfinder`) -> build (`poteto-mode` reproduce, test, fix, verify) -> Grok audit -> rework rule -> PR `Closes #N` -> squash merge on green CI.
+  - **`security` + `agent`** -> **`audit-security`**: Dedicated security audit & triage. Audits code, secrets, supply-chain, and agent surfaces. If standalone defects exist, creates issues (`fix(security): ...`, `bug,agent,security`) without raw secrets to trigger `fix-bug`.
+  - **`bug` + `agent`** -> **`fix-bug`**: Read issue/error/logs -> reproduce first (if it cannot reproduce, stop and ask César in thread final message) -> write a failing test -> fix the root cause (`ce-debug`, `tdd`, `principle-fix-root-causes`) -> verify all tests + run the app once -> Grok audit & security audit -> PR `Closes #N` -> squash merge on green.
+  - **`agent` alone (or with `feature`)** -> **`implement-ticket`**: Full lifecycle: plan (`grill-with-docs` + `wayfinder`) -> build (`poteto-mode` reproduce, test, fix, verify) -> Grok audit & security audit -> rework rule -> PR `Closes #N` -> squash merge on green CI.
 - **Manual Labeling Order (`epic` before `agent`)**:
   - When manually adding labels to an existing issue in GitHub or Linear, **always add `epic` before `agent`** so `epic` is already present on the issue payload when `agent` triggers `.github/workflows/notify-grok.yml`.
 - **Deploy Rule**:
@@ -41,6 +42,7 @@ This repository follows the **Grok Bot Agent Factory** autonomous workflow. Read
   1. Green CI check (`ci`).
   2. Independent runtime verification via `.agents/skills/verify-app` (or `verify-<app>`) with `exitCode === 0`.
   3. Independent cross-model adversarial interrogation on `grok::grok-4.7` (`reasoningEffort: "high"`) returning `PASS`.
+  4. Independent security audit via `.agents/skills/audit-security` (`.cursor/agents/security-auditor.md`) returning `PASS`.
 - **Squash Merge (Never Delete Branches)**:
   - Merge using `gh pr merge <PR_NUMBER> --squash`.
   - **Strict Rule**: NEVER pass `--delete-branch`. Never delete branches.
@@ -52,6 +54,7 @@ This repository follows the **Grok Bot Agent Factory** autonomous workflow. Read
 - **Backend / Complex Logic Build** (`db`, `sql`, `concurrency`, `security`, `algorithm`, `state-machine`, `architecture`): `grok-4.7-build-fast` (`GROK_WORK`, `reasoningEffort: medium`).
 - **Runtime Verify**: `antigravity::gemini-3.8-flash-medium` (`AGY_FAST`, medium effort).
 - **Independent Audit / Interrogation**: `grok::grok-4.7` (`GROK_AUDIT`, `reasoningEffort: "high"`).
+- **Security Audit**: `grok::grok-4.7` (`GROK_AUDIT`, `reasoningEffort: "high"`).
 - **Rework Escalation**: On verification or audit failure, escalate rework to **`antigravity::gemini-3.8-flash-high`** (`AGY_FAST`, high effort) — strictly distinct from the `grok-4.7` auditor — for a maximum of **2 attempts** (`maxRetries: 2`). Stop and block if still failing after 2 attempts.
 - **Task-Based Effort Scaling**:
   - `low` (`gemini-3.8-flash-low`): scout / simple tasks.

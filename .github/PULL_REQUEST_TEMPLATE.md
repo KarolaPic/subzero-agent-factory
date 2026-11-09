@@ -15,6 +15,7 @@
 | **Rework Escalation (<=2)** | `AGY_FAST` | `antigravity::gemini-3.8-flash-high` | `retryCount: 0..2` |
 | **Phase 4a: Runtime Proof** | `AGY_FAST` | `antigravity::gemini-3.8-flash-medium` | `verify-app` (`exitCode: 0`) |
 | **Phase 4b: Interrogation** | `GROK_AUDIT` | `grok::grok-4.7` (`reasoningEffort: high`) | `verdict: PASS` |
+| **Phase 4c: Security Audit** | `GROK_AUDIT` | `grok::grok-4.7` (`reasoningEffort: high`) | `security-report.json` (`PASS`) |
 
 ### Phase 4a: Runtime Verification Proof
 ```text
@@ -24,4 +25,10 @@
 ### Phase 4b: Independent Grok 4.7 Interrogation Verdict
 ```text
 verdict: PASS
+```
+
+### Phase 4c: Independent Security Audit Receipt
+```text
+verdict: PASS
+# artifacts/<work-item-id>/security-report.json
 ```

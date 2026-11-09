@@ -14,7 +14,7 @@
     "maxConcurrency": 3
   },
   "planning": {
-    "skills": ["implement-ticket", "fix-bug", "plan-epic", "wayfinder", "grill-with-docs", "grilling", "domain-modeling", "to-spec", "to-tickets", "tdd"],
+    "skills": ["implement-ticket", "fix-bug", "plan-epic", "audit-security", "wayfinder", "grill-with-docs", "grilling", "domain-modeling", "to-spec", "to-tickets", "tdd"],
     "grilling": {
       "deduceFromCodeAndDocsFirst": true,
       "minQuestionsPerBlock": 2,
@@ -89,11 +89,19 @@
       "model": "grok-4.7",
       "options": { "reasoningEffort": "high" },
       "role": "adversarial-audit"
+    },
+    "securityAuditor": {
+      "pool": "GROK_AUDIT",
+      "providerInstanceId": "grok",
+      "model": "grok-4.7",
+      "options": { "reasoningEffort": "high" },
+      "role": "security-audit"
     }
   },
   "gates": {
     "requireRuntimeVerify": true,
     "requireAdversarialInterrogate": true,
+    "requireSecurityAudit": true,
     "maxRetries": 2,
     "maxContextBriefBytes": 2048
   },

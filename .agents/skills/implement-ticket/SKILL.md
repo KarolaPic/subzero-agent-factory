@@ -21,10 +21,12 @@ High-level orchestrator skill designed for autonomous feature tickets and issue-
 4. Verification (Gemini 3.8 Flash Medium: verify-app)
      ↓
 5. Independent Adversarial Audit (Grok 4.7 High: GROK_AUDIT)
-     ↓ (If audit fails: rework with Gemini 3.8 Flash High, max 2 retries)
-6. PR & Squash Merge (Closes #N; green CI 'ci' + audit PASS; gh pr merge --squash without --delete-branch)
      ↓
-7. Deploy Check (Deploy ONLY if issue has 'deploy' label, after green merge)
+6. Independent Security Audit (Grok 4.7 High: audit-security)
+     ↓ (If audit fails: rework with Gemini 3.8 Flash High, max 2 retries)
+7. PR & Squash Merge (Closes #N; green CI 'ci' + audits PASS; gh pr merge --squash without --delete-branch)
+     ↓
+8. Deploy Check (Deploy ONLY if issue has 'deploy' label, after green merge)
 ```
 
 ---
@@ -71,17 +73,21 @@ High-level orchestrator skill designed for autonomous feature tickets and issue-
 
 ---
 
-## Phase 4: Runtime Verification & Independent Audit
+## Phase 4: Runtime Verification, Adversarial Audit & Security Audit
 
-1. **Runtime Verification**:
+1. **Runtime Verification (Phase 4a)**:
    - Model: `antigravity::gemini-3.8-flash-medium` (`effort: medium`).
    - Run the application verification suite ([`verify-app`](../verify-app/SKILL.md) / `verify-<app>`).
    - Verify all unit, integration, and runtime checks pass cleanly (`exitCode === 0`).
-2. **Adversarial Audit**:
-   - Model: `grok::grok-4.7` (`reasoningEffort: high`, `GROK_AUDIT`).
-   - Read-only independent audit of diff, spec adherence, security implications, and edge cases.
-3. **Rework Rule**:
-   - If verification fails or Grok returns findings:
+2. **Adversarial Audit (Phase 4b)**:
+   - Model: `grok::grok-4.7` (`reasoningEffort: high`, `GROK_AUDIT`, [`.cursor/agents/interrogator-grok.md`](../../../.cursor/agents/interrogator-grok.md)).
+   - Read-only independent audit of diff, spec adherence, and edge cases (`verdict: PASS`).
+3. **Security Audit (Phase 4c)**:
+   - Model: `grok::grok-4.7` (`reasoningEffort: high`, `GROK_AUDIT`, [`.cursor/agents/security-auditor.md`](../../../.cursor/agents/security-auditor.md)).
+   - Skill: [`audit-security`](../audit-security/SKILL.md).
+   - Audit AST patterns, secrets, dependencies, and LLM/agent boundaries. Produce `artifacts/<work-item-id>/security-report.json` (`verdict: PASS`).
+4. **Rework Rule**:
+   - If verification, adversarial interrogation, or security audit fails:
      - Escalate rework to **`antigravity::gemini-3.8-flash-high`** (effort: high).
      - **Invariant**: The rework model is ALWAYS from a different family than the auditor (`grok-4.7`).
      - Maximum 2 rework attempts (`maxRetries: 2`).
@@ -99,7 +105,7 @@ High-level orchestrator skill designed for autonomous feature tickets and issue-
 2. **Merge Gate**:
    - Merge ONLY when:
      - Required status check **`ci`** is green on the current head rebased onto `main`.
-     - Independent verification and Grok audit returned `PASS`.
+     - Independent verification, Grok interrogation, and Security audit all returned `PASS`.
 3. **Merge Command (No Branch Deletion)**:
    - Execute squash merge:
      ```bash

@@ -23,11 +23,13 @@ High-level bug fixing skill for autonomous defect triage, reproduction-first dia
      ↓
 5. Verification: All tests pass + run the application once
      ↓
-6. Independent Audit (Grok 4.7 High: GROK_AUDIT)
-     ↓ (If audit fails: rework with Gemini 3.8 Flash High, max 2 retries)
-7. PR & Squash Merge (Closes #N; green CI 'ci' + audit PASS; gh pr merge --squash without --delete-branch)
+6. Independent Adversarial Audit (Grok 4.7 High: GROK_AUDIT)
      ↓
-8. Deploy Check (Deploy only if issue carries 'deploy' label, after green merge)
+7. Independent Security Audit (Grok 4.7 High: audit-security)
+     ↓ (If audit fails: rework with Gemini 3.8 Flash High, max 2 retries)
+8. PR & Squash Merge (Closes #N; green CI 'ci' + audits PASS; gh pr merge --squash without --delete-branch)
+     ↓
+9. Deploy Check (Deploy only if issue carries 'deploy' label, after green merge)
 ```
 
 ---
@@ -100,13 +102,17 @@ Enforce root-cause engineering discipline directly in the fix:
 
 ---
 
-## Phase 6: Independent Audit & Rework
+## Phase 6: Independent Audit, Security Audit & Rework
 
-1. **Grok 4.7 Audit**:
-   - Model: `grok::grok-4.7` (`reasoningEffort: high`, `GROK_AUDIT`).
-   - Audit verifies that the fix addresses the true root cause rather than applying a symptom patch, and that the reproduction test proves correctness.
-2. **Rework Rule**:
-   - If audit fails, rework is assigned to **`antigravity::gemini-3.8-flash-high`** (effort: high).
+1. **Grok 4.7 Adversarial Audit**:
+   - Model: `grok::grok-4.7` (`reasoningEffort: high`, `GROK_AUDIT`, [`.cursor/agents/interrogator-grok.md`](../../../.cursor/agents/interrogator-grok.md)).
+   - Audit verifies that the fix addresses the true root cause rather than applying a symptom patch, and that the reproduction test proves correctness (`verdict: PASS`).
+2. **Security Audit**:
+   - Model: `grok::grok-4.7` (`reasoningEffort: high`, `GROK_AUDIT`, [`.cursor/agents/security-auditor.md`](../../../.cursor/agents/security-auditor.md)).
+   - Skill: [`audit-security`](../audit-security/SKILL.md).
+   - Audit verifies zero introduced security weaknesses, no exposed secrets, and no weakened authorization in the bug fix (`verdict: PASS`).
+3. **Rework Rule**:
+   - If adversarial audit or security audit fails, rework is assigned to **`antigravity::gemini-3.8-flash-high`** (effort: high).
    - Rework builder is strictly from a different model family from the Grok auditor.
    - **Max Retries**: Exactly **2 rework attempts** (`maxRetries: 2`). If still unresolved after 2 attempts, stop immediately and report the blocker in the thread final message.
 
@@ -120,7 +126,7 @@ Enforce root-cause engineering discipline directly in the fix:
    - PR body MUST include `Closes #N` so GitHub automatically closes the bug report upon merge. If the bug is the final deploy sub-issue of an epic, also include `Closes #<EPIC_NUMBER>`.
    - Include root-cause explanation, reproduction evidence, and test diff in the PR description.
 2. **Squash Merge**:
-   - Merge ONLY when required status check **`ci`** is green and Grok audit returns `PASS`.
+   - Merge ONLY when required status check **`ci`** is green, Grok adversarial interrogation returns `PASS`, and Security audit returns `PASS`.
    - Merge command (never delete branches):
      ```bash
      gh pr merge <PR_NUMBER> --squash

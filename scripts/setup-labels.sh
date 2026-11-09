@@ -38,6 +38,7 @@ create_label "rework"            "D93F0B" "Escalated to Gemini 3.8 Flash High fo
 create_label "ready-to-merge"    "5319E7" "Green CI + independent verification & Grok 4.7 interrogation passed"
 create_label "feature"           "A2EEEF" "New user-facing feature or enhancement"
 create_label "bug"               "D73A4A" "Bug report or regression fix"
+create_label "security"          "004D40" "Security audit finding, vulnerability fix, or hardening"
 
 echo ""
 echo "✅ GitHub labels configured."
