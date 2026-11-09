@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Configure model settings for Gemini, Grok, and Cursor models (cursor-small) ([#135](https://github.com/cesarchavezcal/subzero-agent-factory/issues/135)).
 - Interactive wizard orchestrator skill ( new) and documentation ([#131](https://github.com/cesarchavezcal/subzero-agent-factory/issues/131)).
 - Automated github repo bootstrap, labels, and webhook wiring for project scaffolding ([#130](https://github.com/cesarchavezcal/subzero-agent-factory/issues/130)).
 - Framework CLI runner, project-source skills installer, and .factory.yml generator ([#129](https://github.com/cesarchavezcal/subzero-agent-factory/issues/129)).

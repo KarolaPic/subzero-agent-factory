@@ -112,7 +112,7 @@ Models are not hard-coded in the factory. They are configured at the repository 
 - **`auditor`**: Performs independent adversarial interrogation and code review. **Must differ from the builder model**.
 - **`planner`**: Handles architecture discovery, spec creation, and ticket planning (`wayfinder`, `to-spec`, `grill-with-docs`). Defaults to `builder`.
 - **`epic_planner`**: Decomposes initiative-level epics into vertical sub-issues (`plan-epic`). Defaults to `builder`.
-- **`subagents`**: Powers background task subagents and auxiliary workers. Defaults to `builder`.
+- **`subagents`**: Powers background task subagents and auxiliary workers (default: `cursor-small`).
 - **`scorer`**: Cheap model role (default: `gemini-3.8-flash-low`) used by T3 during runs to score PR diffs (1–10 scale) without paid API keys.
 
 ### Allowed Models (`models.allowed.yml`)
@@ -121,8 +121,9 @@ The factory enforces a curated allowed list in [`models.allowed.yml`](models.all
 - `gemini-3.8-flash-medium`
 - `gemini-3.8-flash-high`
 - `grok-4.7`
+- `cursor-small`
 
-Default committed configuration: `builder: gemini-3.8-flash-high`, `auditor: grok-4.7`, `scorer: gemini-3.8-flash-low`, with `planner`, `epic_planner`, and `subagents` defaulting to `gemini-3.8-flash-high`.
+Default committed configuration: `builder: gemini-3.8-flash-high`, `auditor: grok-4.7`, `subagents: cursor-small`, `scorer: gemini-3.8-flash-low`, with `planner` and `epic_planner` defaulting to `gemini-3.8-flash-high`.
 
 ### Strict Invariants & Rules
 - **Auditor Must Differ from Builder**: The setup script refuses any configuration where `auditor == builder`, and CI fails on it.

@@ -6,3 +6,4 @@ models:
   - gemini-3.8-flash-medium
   - gemini-3.8-flash-high
   - grok-4.7
+  - cursor-small
